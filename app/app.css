@@ -1,0 +1,176 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", ui-serif, Georgia, serif;
+  --font-display: "Anton", "Bebas Neue", Impact, sans-serif;
+
+  --color-navy: #0e1f44;
+  --color-navy-deep: #081633;
+  --color-sky: #6bb1db;
+  --color-sky-bright: #4fa1d2;
+  --color-sky-soft: #d9ebf6;
+  --color-ink: #0b1430;
+  --color-paper: #fafbfd;
+  --color-paper-warm: #f5f1e8;
+  --color-line: #e4e8f0;
+  --color-mute: #5a6582;
+  --color-cream: #f4e9c4;
+  --color-red: #e0392f;
+  --color-green: #2a7d4f;
+}
+
+@layer base {
+  html,
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--color-navy);
+    color: var(--color-paper);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.01em;
+  }
+
+  /* Subtle paper grain on body — only on large screens to avoid mobile cost. */
+  @media (min-width: 768px) {
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      opacity: 0.025;
+      mix-blend-mode: multiply;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    }
+  }
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+@utility container-prose {
+  max-width: 68ch;
+}
+
+/* Diagonal hash pattern used on accent strips (kickoff banner, etc.) */
+@utility bg-hashed {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-navy) 0,
+    var(--color-navy) 2px,
+    transparent 2px,
+    transparent 8px
+  );
+}
+
+/* Score "scoreboard" numerals — tabular figures with display font */
+@utility scoreboard {
+  font-family: var(--font-display);
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  letter-spacing: 0.02em;
+}
+
+/* Long-form article body — used both by the public article page and inside
+   the TipTap editor so what you see is what you get. */
+.prose-content {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  line-height: 1.75;
+  color: var(--color-ink);
+}
+.prose-content > * + * {
+  margin-top: 1.25em;
+}
+.prose-content h2 {
+  font-family: var(--font-serif);
+  font-size: 1.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-navy);
+  margin-top: 2.2em;
+  letter-spacing: -0.015em;
+}
+.prose-content h3 {
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-navy);
+  margin-top: 1.8em;
+  letter-spacing: -0.01em;
+}
+.prose-content p {
+  margin-top: 1.25em;
+}
+.prose-content a {
+  color: var(--color-sky-bright);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+}
+.prose-content a:hover {
+  color: var(--color-navy);
+}
+.prose-content strong {
+  font-weight: 600;
+  color: var(--color-navy);
+}
+.prose-content em {
+  font-style: italic;
+}
+.prose-content ul,
+.prose-content ol {
+  padding-left: 1.5em;
+}
+.prose-content ul {
+  list-style-type: disc;
+}
+.prose-content ol {
+  list-style-type: decimal;
+}
+.prose-content li + li {
+  margin-top: 0.4em;
+}
+.prose-content blockquote {
+  border-left: 3px solid var(--color-sky);
+  padding-left: 1.5em;
+  font-style: italic;
+  color: var(--color-mute);
+  font-size: 1.25rem;
+}
+.prose-content hr {
+  border: 0;
+  height: 1px;
+  background: var(--color-line);
+  margin: 2em 0;
+}
+.prose-content img {
+  margin: 2em 0;
+  width: 100%;
+  height: auto;
+  border-radius: 0;
+}
+.prose-content code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--color-paper-warm);
+  padding: 0.1em 0.35em;
+}
+.prose-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--color-mute);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
