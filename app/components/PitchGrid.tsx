@@ -84,35 +84,42 @@ export function PitchGrid({
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-10 items-start">
       {/* Pitch */}
       <div>
-        <div className="rounded-sm bg-navy/95 p-4 sm:p-5 relative">
+        <div className="rounded-sm bg-green/95 p-4 sm:p-5 relative">
           {/* pitch markings (decorative) */}
-          <div className="absolute inset-4 sm:inset-5 border border-sky/15 rounded-sm pointer-events-none" />
-          <div className="absolute left-1/2 top-4 bottom-4 sm:top-5 sm:bottom-5 w-px bg-sky/15 pointer-events-none" />
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-20 sm:h-28 sm:w-28 rounded-full border border-sky/15 pointer-events-none" />
+          <div className="absolute inset-4 sm:inset-5 border border-paper/30 rounded-sm pointer-events-none" />
+          <div className="absolute left-1/2 top-4 bottom-4 sm:top-5 sm:bottom-5 w-px bg-paper/30 pointer-events-none" />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-20 sm:h-28 sm:w-28 rounded-full border border-paper/30 pointer-events-none" />
 
-          {zones.map((zone, zi) => (
-            <div key={zone} className={zi > 0 ? "mt-3" : ""}>
-              <div className="flex items-center gap-3 mb-2 text-[10px] uppercase tracking-[0.22em] text-sky/70">
+          {zones.map((zone, zi) => {
+            const isLast = zi === zones.length - 1;
+            const label = (
+              <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.22em] text-paper/70">
                 <span>{zone}</span>
-                <span className="flex-1 h-px bg-sky/15" />
+                <span className="flex-1 h-px bg-paper/30" />
               </div>
-              <div
-                className="grid gap-[3px] sm:gap-[4px]"
-                style={{
-                  gridTemplateColumns: `repeat(${config.cols}, minmax(0, 1fr))`,
-                }}
-              >
-                {(squaresByZone.get(zone) ?? []).map((s) => (
-                  <Cell
-                    key={s.id}
-                    square={s}
-                    selected={selected.has(s.id)}
-                    onToggle={() => toggle(s)}
-                  />
-                ))}
+            );
+            return (
+              <div key={zone} className={zi > 0 ? "mt-3" : ""}>
+                {!isLast && <div className="mb-2">{label}</div>}
+                <div
+                  className="grid gap-[3px] sm:gap-[4px]"
+                  style={{
+                    gridTemplateColumns: `repeat(${config.cols}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {(squaresByZone.get(zone) ?? []).map((s) => (
+                    <Cell
+                      key={s.id}
+                      square={s}
+                      selected={selected.has(s.id)}
+                      onToggle={() => toggle(s)}
+                    />
+                  ))}
+                </div>
+                {isLast && <div className="mt-2">{label}</div>}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <Legend />
@@ -314,7 +321,7 @@ function Legend() {
         <span className="h-3 w-3 bg-paper border border-line" /> Selected
       </span>
       <span className="flex items-center gap-2">
-        <span className="h-3 w-3 bg-navy/95" /> Available
+        <span className="h-3 w-3 bg-green/95" /> Available
       </span>
     </div>
   );

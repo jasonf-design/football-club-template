@@ -16,7 +16,7 @@ const storage = createCookieSessionStorage({
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.COOKIE_SECURE === "true",
     secrets: [secret],
     maxAge: 60 * 60 * 24 * 30,
   },
