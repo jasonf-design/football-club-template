@@ -1,27 +1,38 @@
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
+import { Link } from "react-router";
 import type { Route } from "./+types/shop";
 import { db } from "~/db.server";
-import { products } from "../../db/schema";
+import { media, products } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
+import { uploadUrlFor } from "~/lib/uploads";
 
 export function meta(_: Route.MetaArgs) {
   return [
     { title: "Shop · Doncaster City FC" },
     {
       name: "description",
-      content: "Official Doncaster City FC merchandise.",
+      content:
+        "Official Doncaster City FC merchandise. Every purchase goes back into the club.",
     },
   ];
 }
 
 export async function loader() {
-  const all = await db
-    .select()
+  const rows = await db
+    .select({
+      id: products.id,
+      slug: products.slug,
+      name: products.name,
+      pricePence: products.pricePence,
+      stock: products.stock,
+      imageFilename: media.filename,
+    })
     .from(products)
+    .leftJoin(media, eq(media.id, products.imageMediaId))
     .where(eq(products.active, true))
-    .orderBy(products.sortOrder);
-  return { products: all };
+    .orderBy(asc(products.sortOrder), asc(products.name));
+  return { products: rows };
 }
 
 export default function Shop({ loaderData }: Route.ComponentProps) {
@@ -31,32 +42,57 @@ export default function Shop({ loaderData }: Route.ComponentProps) {
       <PageHeader
         eyebrow="Club shop"
         title="Wear the badge."
-        lede="Shirts, scarves, and the little things that make matchday matchday. Every purchase goes straight back into the club."
+        lede="Shirts, scarves and the little things that make matchday matchday. Every purchase goes straight back into the club."
       />
       <Container size="wide" className="py-16">
         {products.length === 0 ? (
           <div className="border border-line bg-paper-warm/40 p-16 text-center">
             <div className="font-serif text-3xl text-navy">
-              The shop is closed for kit drop.
+              Closed for kit drop.
             </div>
             <p className="mt-3 text-mute max-w-md mx-auto">
-              First-season merchandise lands soon. Get on the list for when it
-              does.
+              First-season merch lands here soon. Get in touch if you'd like
+              an early heads-up.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
-            {products.map((p) => (
-              <article key={p.id} className="group">
-                <div className="aspect-square bg-navy/5 relative overflow-hidden" />
-                <h3 className="font-serif text-lg text-navy mt-4 leading-tight">
-                  {p.name}
-                </h3>
-                <div className="text-sm text-mute mt-1">
-                  £{(p.pricePence / 100).toFixed(2)}
-                </div>
-              </article>
-            ))}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
+            {products.map((p) => {
+              const img = uploadUrlFor(p.imageFilename);
+              const soldOut = p.stock === 0;
+              return (
+                <Link
+                  key={p.id}
+                  to={`/shop/${p.slug}`}
+                  className="group block"
+                >
+                  <div className="aspect-square bg-paper-warm relative overflow-hidden">
+                    {img ? (
+                      <img
+                        src={img}
+                        alt={p.name}
+                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-navy via-navy-deep to-sky/10" />
+                    )}
+                    {soldOut && (
+                      <div className="absolute top-3 left-3 bg-paper text-navy text-[10px] tracking-[0.18em] uppercase px-2 py-0.5">
+                        Sold out
+                      </div>
+                    )}
+                  </div>
+                  <div className="pt-4 flex items-baseline justify-between gap-3">
+                    <h3 className="font-serif text-lg text-navy leading-tight group-hover:text-sky-bright transition-colors">
+                      {p.name}
+                    </h3>
+                    <div className="text-sm text-ink font-medium whitespace-nowrap">
+                      £{(p.pricePence / 100).toFixed(2)}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </Container>

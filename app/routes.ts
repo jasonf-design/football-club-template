@@ -20,6 +20,9 @@ export default [
     route("pitch/success", "routes/pitch-success.tsx"),
     route("pitch/cancel", "routes/pitch-cancel.tsx"),
     route("shop", "routes/shop.tsx"),
+    route("shop/success", "routes/shop-success.tsx"),
+    route("shop/:slug", "routes/shop-product.tsx"),
+    route("cart", "routes/cart.tsx"),
   ]),
 
   // Uploaded image serving — public, no layout, no auth
@@ -47,6 +50,9 @@ export default [
       route("sponsors/new", "routes/admin-sponsors-new.tsx"),
       route("sponsors/:id/edit", "routes/admin-sponsors-edit.tsx"),
       route("pitch", "routes/admin-pitch.tsx"),
+      route("shop", "routes/admin-shop.tsx"),
+      route("shop/new", "routes/admin-shop-new.tsx"),
+      route("shop/:id/edit", "routes/admin-shop-edit.tsx"),
       route("orders", "routes/admin-orders.tsx"),
       route("messages", "routes/admin-messages.tsx"),
       route("media", "routes/admin-media.tsx"),

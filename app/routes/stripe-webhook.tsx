@@ -3,7 +3,12 @@ import { data } from "react-router";
 import type Stripe from "stripe";
 import type { Route } from "./+types/stripe-webhook";
 import { db } from "~/db.server";
-import { pitchOrders, pitchSquares, shopOrders } from "../../db/schema";
+import {
+  pitchOrders,
+  pitchSquares,
+  products,
+  shopOrders,
+} from "../../db/schema";
 import { getStripe } from "~/lib/stripe.server";
 
 export async function loader() {
@@ -107,23 +112,47 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   if (kind === "shop") {
-    // Wired through in Phase 4 — leave a clean stub here so the webhook
-    // doesn't 500 if a shop event fires.
     const [order] = await db
       .select()
       .from(shopOrders)
       .where(eq(shopOrders.id, orderId))
       .limit(1);
     if (!order) return;
-    if (order.status === "paid") return;
+    if (order.status === "paid") return; // idempotent
+
+    type LineItem = {
+      productId: string;
+      qty: number;
+      name: string;
+      pricePence: number;
+      slug: string;
+    };
+    const lineItems = (order.lineItemsJson as LineItem[] | null) ?? [];
+    for (const li of lineItems) {
+      try {
+        const [p] = await db
+          .select({ id: products.id, stock: products.stock })
+          .from(products)
+          .where(eq(products.id, li.productId))
+          .limit(1);
+        if (p && p.stock != null) {
+          await db
+            .update(products)
+            .set({ stock: Math.max(0, p.stock - li.qty) })
+            .where(eq(products.id, p.id));
+        }
+      } catch (err) {
+        // Stock decrement is best-effort — never fail the webhook over it.
+        console.error("[stripe webhook] stock decrement failed", err);
+      }
+    }
+
     await db
       .update(shopOrders)
       .set({
         status: "paid",
         paidAt: new Date(),
         stripePaymentIntentId: paymentIntentId,
-        // Shipping details live on customer_details / collected_information in
-        // newer Stripe API versions — Phase 4 will read those properly.
         shippingJson: (session.customer_details as unknown) ?? null,
       })
       .where(eq(shopOrders.id, order.id));

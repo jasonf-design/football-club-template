@@ -1,5 +1,6 @@
 import { NavLink, Link } from "react-router";
 import { Crest } from "./Crest";
+import { CartIcon } from "./CartIcon";
 
 const NAV = [
   { to: "/news", label: "News" },
@@ -104,9 +105,15 @@ export function SiteHeader({
                 )}
               </NavLink>
             ))}
+            <span className="h-5 w-px bg-line mx-1" aria-hidden />
+            <CartIcon />
           </nav>
 
-          <details className="lg:hidden ml-auto relative">
+          <div className="lg:hidden ml-auto flex items-center gap-2">
+            <CartIcon />
+          </div>
+
+          <details className="lg:hidden relative">
             <summary className="list-none cursor-pointer p-2 -mr-2 select-none">
               <span className="sr-only">Open menu</span>
               <svg
