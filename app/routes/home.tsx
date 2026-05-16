@@ -102,12 +102,15 @@ function Hero({
 }) {
   return (
     <section className="relative bg-navy text-paper overflow-hidden">
-      <img
-        src="/hero.jpg"
-        alt=""
-        aria-hidden
-        className="absolute inset-0 h-full w-full object-cover opacity-40"
-      />
+      <picture>
+        <source srcSet="/hero.avif" type="image/avif" />
+        <img
+          src="/hero.jpg"
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover opacity-40"
+        />
+      </picture>
       <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/85 to-navy/40 pointer-events-none" />
       {/* decorative diagonal accent */}
       <div className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-sky/20 to-transparent pointer-events-none" />
