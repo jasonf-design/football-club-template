@@ -108,10 +108,10 @@ function Hero({
           src="/hero.jpg"
           alt=""
           aria-hidden
-          className="absolute inset-0 h-full w-full object-cover opacity-40"
+          className="absolute inset-0 h-full w-full object-cover opacity-60"
         />
       </picture>
-      <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/85 to-navy/40 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-navy/95 via-navy/70 to-navy/25 pointer-events-none" />
       {/* decorative diagonal accent */}
       <div className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-sky/20 to-transparent pointer-events-none" />
       <div className="absolute -top-12 -right-12 h-96 w-96 rounded-full border border-sky/20 pointer-events-none" />
