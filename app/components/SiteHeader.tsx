@@ -114,7 +114,7 @@ export function SiteHeader({
           </div>
 
           <details className="lg:hidden relative">
-            <summary className="list-none cursor-pointer p-2 -mr-2 select-none">
+            <summary className="list-none cursor-pointer p-2 -mr-2 select-none relative z-20">
               <span className="sr-only">Open menu</span>
               <svg
                 width="22"
@@ -127,8 +127,22 @@ export function SiteHeader({
                 <path d="M3 6h16M3 11h16M3 16h16" />
               </svg>
             </summary>
-            <div className="absolute right-0 top-full mt-2 w-60 bg-paper border border-line shadow-xl">
-              <nav className="flex flex-col py-2">
+            <div
+              aria-hidden
+              className="fixed inset-x-0 bottom-0 top-28 z-10 bg-ink/30"
+              onClick={(e) =>
+                (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open")
+              }
+            />
+            <div className="absolute right-0 top-full mt-2 w-60 bg-paper border border-line shadow-xl z-20">
+              <nav
+                className="flex flex-col py-2"
+                onClick={(e) => {
+                  if ((e.target as HTMLElement).closest("a")) {
+                    (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
+                  }
+                }}
+              >
                 {NAV.map((item) => (
                   <NavLink
                     key={item.to}
