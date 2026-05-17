@@ -19,6 +19,19 @@ export function meta(_: Route.MetaArgs) {
   ];
 }
 
+export function links() {
+  return [
+    {
+      rel: "preload",
+      as: "image",
+      type: "image/avif",
+      imageSrcSet: "/hero-768.avif 768w, /hero.avif 1248w",
+      imageSizes: "100vw",
+      fetchPriority: "high",
+    },
+  ];
+}
+
 export async function loader() {
   const now = new Date();
   const [nextFixtures, recentResults, latestPosts, activeSponsors] =
@@ -103,11 +116,17 @@ function Hero({
   return (
     <section className="relative bg-navy text-paper overflow-hidden">
       <picture>
-        <source srcSet="/hero.avif" type="image/avif" />
+        <source
+          type="image/avif"
+          srcSet="/hero-768.avif 768w, /hero.avif 1248w"
+          sizes="100vw"
+        />
         <img
           src="/hero.jpg"
           alt=""
           aria-hidden
+          fetchPriority="high"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-cover opacity-60"
         />
       </picture>

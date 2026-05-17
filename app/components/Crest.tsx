@@ -6,12 +6,16 @@ export function Crest({
   alt?: string;
 }) {
   return (
-    <img
-      src="/DoncasterCity.png"
-      alt={alt}
-      className={className}
-      width={64}
-      height={64}
-    />
+    <picture>
+      <source srcSet="/crest-128.avif" type="image/avif" />
+      <source srcSet="/crest-128.webp" type="image/webp" />
+      <img
+        src="/crest-128.png"
+        alt={alt}
+        className={className}
+        width={64}
+        height={64}
+      />
+    </picture>
   );
 }
