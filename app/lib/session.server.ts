@@ -60,3 +60,11 @@ export async function requireAdmin(request: Request): Promise<User> {
   }
   return user;
 }
+
+export async function requireAdminRole(request: Request): Promise<User> {
+  const user = await requireAdmin(request);
+  if (user.role !== "admin") {
+    throw new Response("Admins only", { status: 403 });
+  }
+  return user;
+}

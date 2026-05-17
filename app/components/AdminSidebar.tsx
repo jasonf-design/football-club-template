@@ -1,7 +1,9 @@
 import { Form, Link, NavLink } from "react-router";
 import { Crest } from "./Crest";
 
-const NAV = [
+type NavItem = { to: string; label: string; end?: boolean; adminOnly?: boolean };
+
+const NAV: NavItem[] = [
   { to: "/admin", label: "Dashboard", end: true },
   { to: "/admin/posts", label: "News & posts" },
   { to: "/admin/players", label: "Squad" },
@@ -12,6 +14,7 @@ const NAV = [
   { to: "/admin/orders", label: "Orders" },
   { to: "/admin/media", label: "Media library" },
   { to: "/admin/messages", label: "Contact messages" },
+  { to: "/admin/users", label: "Team access", adminOnly: true },
 ];
 
 export function AdminSidebar({
@@ -35,28 +38,40 @@ export function AdminSidebar({
       </Link>
 
       <nav className="flex-1 py-4 px-2 space-y-0.5">
-        {NAV.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) =>
-              [
-                "block px-3 py-2 text-sm rounded transition-colors",
-                isActive
-                  ? "bg-sky/20 text-paper border-l-2 border-sky pl-[10px]"
-                  : "text-paper/70 hover:text-paper hover:bg-paper/5",
-              ].join(" ")
-            }
-          >
-            {item.label}
-          </NavLink>
-        ))}
+        {NAV.filter((item) => !item.adminOnly || user.role === "admin").map(
+          (item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                [
+                  "block px-3 py-2 text-sm rounded transition-colors",
+                  isActive
+                    ? "bg-sky/20 text-paper border-l-2 border-sky pl-[10px]"
+                    : "text-paper/70 hover:text-paper hover:bg-paper/5",
+                ].join(" ")
+              }
+            >
+              {item.label}
+            </NavLink>
+          ),
+        )}
       </nav>
 
       <div className="px-5 py-4 border-t border-paper/10">
-        <div className="text-sm text-paper truncate">{user.name}</div>
-        <div className="text-xs text-paper/50 truncate">{user.email}</div>
+        <Link
+          to="/admin/account"
+          className="block group"
+        >
+          <div className="text-sm text-paper truncate group-hover:text-sky">
+            {user.name}
+          </div>
+          <div className="text-xs text-paper/50 truncate">{user.email}</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-paper/40 mt-1 group-hover:text-sky">
+            Account settings
+          </div>
+        </Link>
         <div className="mt-3 flex items-center gap-3 text-xs">
           <Link
             to="/"
