@@ -5,6 +5,7 @@ import { db } from "~/db.server";
 import { contactMessages } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
+import { sendContactNotification } from "~/lib/email.server";
 
 export function meta(_: Route.MetaArgs) {
   return [
@@ -52,6 +53,14 @@ export async function action({ request }: Route.ActionArgs) {
     ipAddress:
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
   });
+
+  await sendContactNotification({
+    name: parsed.data.name,
+    email: parsed.data.email,
+    subject: parsed.data.subject ?? null,
+    message: parsed.data.message,
+  });
+
   return { ok: true as const };
 }
 

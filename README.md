@@ -50,6 +50,7 @@ See `.env.example` for the full list.
 | `STRIPE_SECRET_KEY` / `STRIPE_PUBLISHABLE_KEY` / `STRIPE_WEBHOOK_SECRET` | Stripe credentials. Leave blank until ready — checkout routes throw a clear error if unconfigured. |
 | `UPLOADS_DIR` | Where uploaded images live on disk. Must be writable by the node user. |
 | `PUBLIC_URL` | Public URL of the site (Stripe success/cancel URLs, OG tags). |
+| `RESEND_API_KEY` / `CONTACT_NOTIFY_TO` / `CONTACT_NOTIFY_FROM` | Optional. When all three are set, the contact form also emails staff via Resend. If any are missing, submissions still land in `/admin/messages` — they just don't trigger an email. `CONTACT_NOTIFY_FROM` must be a verified sender on a domain you've added to Resend. |
 
 ## Project structure
 
@@ -57,7 +58,7 @@ See `.env.example` for the full list.
 football/
 ├── app/
 │   ├── components/        # Shared UI (SiteHeader, AdminSidebar, NewsCard, …)
-│   ├── lib/               # Server helpers (session.server, password.server)
+│   ├── lib/               # Server helpers (session, password, email, stripe, uploads, cart, …)
 │   ├── routes/            # Route modules — wired up in routes.ts
 │   ├── routes.ts          # Route config (we use config-based routing)
 │   ├── root.tsx           # Document <html> shell + font loading
@@ -101,27 +102,51 @@ All tokens live in `app/app.css` under the `@theme` block — extend there.
 - [x] First team
 - [x] Sponsors & partnerships
 - [x] Contact form (persists to `contact_messages`, with honeypot)
-- [x] Pitch sponsorship page (preview — interactive grid pending)
-- [x] Shop landing (preview — products pending)
+- [x] Pitch sponsorship page with interactive grid + Stripe checkout
+- [x] Shop with product pages, cart, and Stripe checkout
 
 **Admin CMS** (`/admin`)
 
 - [x] Auth (argon2 + signed cookie sessions, `requireAdmin` guard)
-- [x] Dashboard with live counts
+- [x] Dashboard with live counts and build-status pills
 - [x] Sidebar navigation
-- [ ] Posts editor (TipTap — phase 2)
-- [ ] Players, fixtures, sponsors CRUD (phase 2)
-- [ ] Pitch admin (phase 3)
-- [ ] Shop admin (phase 4)
-- [ ] Stripe checkout + webhooks (phase 3/4)
+- [x] TipTap-powered posts editor
+- [x] CRUD for posts, players, fixtures, sponsors, shop products
+- [x] Pitch admin (grid seeding, manual orders, status overview)
+- [x] Shop admin + orders inbox
+- [x] Stripe checkout + `/api/stripe/webhook`
+- [x] Contact messages inbox (mark handled, mailto reply)
+- [x] Media library + image uploads (Sharp-processed)
+- [x] **Team access** (admin-only) — add users, change role, reset another user's password, remove. Safeguards prevent self-deletion, self-demotion, and removing the last admin.
+- [x] **Account settings** (`/admin/account`) — any signed-in user can update their own name and password (requires current password).
+
+**Roles**
+
+Two roles live on the `users` table: `admin` and `editor`. Today, `requireAdmin` in `app/lib/session.server.ts` admits any signed-in user; only the new user-management routes use the stricter `requireAdminRole`. If you want editors to be more restricted (e.g. no shop or orders), add `requireAdminRole` to those routes' loaders/actions.
+
+**Notifications**
+
+- Contact form submissions always persist to `contact_messages` and surface in `/admin/messages`.
+- When `RESEND_API_KEY` + `CONTACT_NOTIFY_TO` + `CONTACT_NOTIFY_FROM` are all set, `app/lib/email.server.ts` also emails staff via Resend. Reply-to is set to the submitter so hitting Reply in your inbox responds to them directly. Failures are logged and swallowed — the form never breaks if Resend is down.
 
 ## Deployment notes (Hetzner VPS)
 
-1. Run `npm run build` on the box.
-2. Run `npm run start` under systemd. Bind to localhost; put Caddy in front
-   for TLS.
-3. Persist `local.sqlite` and `uploads/` on a backed-up volume — point
-   `DB_URL` and `UPLOADS_DIR` at it.
-4. Run `npm run db:migrate` on each deploy.
-5. Use `litestream` (or a nightly `sqlite3 .backup` cron) to back up the DB
-   off-box.
+The site runs under **pm2** as the process `football`, listening on port `3010`,
+fronted by a reverse proxy for TLS.
+
+Deploy workflow:
+
+```bash
+npm run build           # produces ./build/{client,server}
+pm2 restart football    # rolls the process onto the new build
+```
+
+Other notes:
+
+- Persist `local.sqlite` and `uploads/` on a backed-up volume — point
+  `DB_URL` and `UPLOADS_DIR` at it.
+- Run `npm run db:migrate` after pulling new code that includes a migration.
+- Use `litestream` (or a nightly `sqlite3 .backup` cron) to back up the DB
+  off-box.
+- The pm2 ecosystem file isn't checked in; env vars live in `.env` next to
+  the build output.

@@ -13,6 +13,7 @@ import {
   sponsors,
 } from "../../db/schema";
 import { isStripeConfigured } from "~/lib/stripe.server";
+import { isResendConfigured } from "~/lib/email.server";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Admin · Doncaster City FC" }];
@@ -80,6 +81,7 @@ export async function loader() {
     activeSponsors,
     stripeConfigured: isStripeConfigured(),
     webhookConfigured: !!process.env.STRIPE_WEBHOOK_SECRET,
+    resendConfigured: isResendConfigured(),
   };
 }
 
@@ -191,6 +193,15 @@ export default function AdminDashboard({ loaderData }: Route.ComponentProps) {
                 d.webhookConfigured
                   ? "/api/stripe/webhook secret set"
                   : "STRIPE_WEBHOOK_SECRET not set"
+              }
+            />
+            <Pill
+              label="Contact email alerts"
+              status={d.resendConfigured ? "ok" : "pending"}
+              note={
+                d.resendConfigured
+                  ? "Resend configured"
+                  : "Falls back to admin inbox only"
               }
             />
             <Pill label="Shop" status="pending" note="Phase 4" />
