@@ -5,7 +5,11 @@ import { db } from "~/db.server";
 import { media, products } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
-import { uploadUrlFor } from "~/lib/uploads";
+import {
+  fallbackFormatFor,
+  variantSrcset,
+  variantUrl,
+} from "~/lib/uploads";
 
 export function meta(_: Route.MetaArgs) {
   return [
@@ -58,8 +62,11 @@ export default function Shop({ loaderData }: Route.ComponentProps) {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
             {products.map((p) => {
-              const img = uploadUrlFor(p.imageFilename);
+              const filename = p.imageFilename;
+              const fallback = filename ? fallbackFormatFor(filename) : null;
               const soldOut = p.stock === 0;
+              const sizes =
+                "(min-width: 1024px) 22vw, (min-width: 768px) 30vw, 48vw";
               return (
                 <Link
                   key={p.id}
@@ -67,12 +74,23 @@ export default function Shop({ loaderData }: Route.ComponentProps) {
                   className="group block"
                 >
                   <div className="aspect-square bg-paper-warm relative overflow-hidden">
-                    {img ? (
-                      <img
-                        src={img}
-                        alt={p.name}
-                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
+                    {filename && fallback ? (
+                      <picture>
+                        <source
+                          type="image/avif"
+                          srcSet={variantSrcset(filename, "avif") ?? undefined}
+                          sizes={sizes}
+                        />
+                        <img
+                          src={variantUrl(filename, 600, fallback)}
+                          srcSet={variantSrcset(filename, fallback) ?? undefined}
+                          sizes={sizes}
+                          alt={p.name}
+                          loading="lazy"
+                          decoding="async"
+                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                      </picture>
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-navy via-navy-deep to-sky/10" />
                     )}

@@ -5,7 +5,11 @@ import { db } from "~/db.server";
 import { media, sponsors } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
-import { uploadUrlFor } from "~/lib/uploads";
+import {
+  fallbackFormatFor,
+  variantSrcset,
+  variantUrl,
+} from "~/lib/uploads";
 
 export function meta(_: Route.MetaArgs) {
   return [
@@ -81,7 +85,14 @@ export default function Sponsors({ loaderData }: Route.ComponentProps) {
                   ].join(" ")}
                 >
                   {grouped[tier].map((s) => {
-                    const logo = uploadUrlFor(s.logoFilename);
+                    const filename = s.logoFilename;
+                    const fallback = filename
+                      ? fallbackFormatFor(filename)
+                      : null;
+                    const sizes =
+                      tier === "principal"
+                        ? "(min-width: 640px) 50vw, 100vw"
+                        : "(min-width: 1024px) 22vw, (min-width: 640px) 30vw, 48vw";
                     return (
                     <a
                       key={s.id}
@@ -90,12 +101,25 @@ export default function Sponsors({ loaderData }: Route.ComponentProps) {
                       rel={s.url ? "noreferrer" : undefined}
                       className="bg-paper aspect-[3/2] flex items-center justify-center p-8 hover:bg-paper-warm transition-colors"
                     >
-                      {logo ? (
-                        <img
-                          src={logo}
-                          alt={s.name}
-                          className="max-h-full max-w-full object-contain"
-                        />
+                      {filename && fallback ? (
+                        <picture>
+                          <source
+                            type="image/avif"
+                            srcSet={variantSrcset(filename, "avif") ?? undefined}
+                            sizes={sizes}
+                          />
+                          <img
+                            src={variantUrl(filename, 600, fallback)}
+                            srcSet={
+                              variantSrcset(filename, fallback) ?? undefined
+                            }
+                            sizes={sizes}
+                            alt={s.name}
+                            loading="lazy"
+                            decoding="async"
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        </picture>
                       ) : (
                         <div className="font-display text-2xl tracking-wider text-navy/80 text-center">
                           {s.name.toUpperCase()}

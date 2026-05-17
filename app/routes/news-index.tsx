@@ -5,7 +5,6 @@ import { media, posts } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
 import { NewsCard } from "~/components/NewsCard";
-import { uploadUrlFor } from "~/lib/uploads";
 
 export function meta(_: Route.MetaArgs) {
   return [
@@ -65,9 +64,10 @@ export default function NewsIndex({ loaderData }: Route.ComponentProps) {
                   title={feature.title}
                   excerpt={feature.excerpt}
                   date={feature.publishedAt ?? new Date()}
-                  hero={uploadUrlFor(feature.heroFilename)}
+                  heroFilename={feature.heroFilename}
                   size="feature"
                   category="Latest"
+                  priority
                 />
               </div>
             )}
@@ -79,7 +79,7 @@ export default function NewsIndex({ loaderData }: Route.ComponentProps) {
                   title={p.title}
                   excerpt={p.excerpt}
                   date={p.publishedAt ?? new Date()}
-                  hero={uploadUrlFor(p.heroFilename)}
+                  heroFilename={p.heroFilename}
                 />
               ))}
             </div>

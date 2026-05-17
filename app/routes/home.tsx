@@ -6,7 +6,11 @@ import { fixtures, media, posts, sponsors } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { NewsCard } from "~/components/NewsCard";
 import { ResultCard } from "~/components/ResultCard";
-import { uploadUrlFor } from "~/lib/uploads";
+import {
+  fallbackFormatFor,
+  variantSrcset,
+  variantUrl,
+} from "~/lib/uploads";
 
 export function meta(_: Route.MetaArgs) {
   return [
@@ -372,7 +376,7 @@ function LatestNews({
               title={feature.title}
               excerpt={feature.excerpt}
               date={feature.publishedAt ?? new Date()}
-              hero={uploadUrlFor(feature.heroFilename)}
+              heroFilename={feature.heroFilename}
               size="feature"
               category="Featured"
             />
@@ -384,7 +388,7 @@ function LatestNews({
                   title={p.title}
                   excerpt={p.excerpt}
                   date={p.publishedAt ?? new Date()}
-                  hero={uploadUrlFor(p.heroFilename)}
+                  heroFilename={p.heroFilename}
                 />
               ))}
             </div>
@@ -550,18 +554,31 @@ function SponsorsStrip({
         </div>
         <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
           {sponsors.map((s) => {
-            const logo = uploadUrlFor(s.logoFilename);
-            const inner = logo ? (
-              <img
-                src={logo}
-                alt={s.name}
-                className="h-10 md:h-12 w-auto opacity-70 hover:opacity-100 transition-opacity"
-              />
-            ) : (
-              <span className="text-xl font-display tracking-wider text-navy/60 hover:text-navy transition-colors">
-                {s.name.toUpperCase()}
-              </span>
-            );
+            const filename = s.logoFilename;
+            const fallback = filename ? fallbackFormatFor(filename) : null;
+            const inner =
+              filename && fallback ? (
+                <picture>
+                  <source
+                    type="image/avif"
+                    srcSet={variantSrcset(filename, "avif") ?? undefined}
+                    sizes="200px"
+                  />
+                  <img
+                    src={variantUrl(filename, 400, fallback)}
+                    srcSet={variantSrcset(filename, fallback) ?? undefined}
+                    sizes="200px"
+                    alt={s.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-10 md:h-12 w-auto opacity-70 hover:opacity-100 transition-opacity"
+                  />
+                </picture>
+              ) : (
+                <span className="text-xl font-display tracking-wider text-navy/60 hover:text-navy transition-colors">
+                  {s.name.toUpperCase()}
+                </span>
+              );
             return s.url ? (
               <a
                 key={s.id}

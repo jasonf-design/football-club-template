@@ -1,4 +1,9 @@
 import { Link } from "react-router";
+import {
+  fallbackFormatFor,
+  variantSrcset,
+  variantUrl,
+} from "~/lib/uploads";
 
 export function NewsCard({
   slug,
@@ -6,18 +11,24 @@ export function NewsCard({
   excerpt,
   date,
   category,
-  hero,
+  heroFilename,
   size = "default",
+  priority = false,
 }: {
   slug: string;
   title: string;
   excerpt?: string | null;
   date: Date;
   category?: string;
-  hero?: string | null;
+  heroFilename?: string | null;
   size?: "default" | "feature";
+  priority?: boolean;
 }) {
   const isFeature = size === "feature";
+  const sizes = isFeature
+    ? "(min-width: 1440px) 1408px, 100vw"
+    : "(min-width: 1024px) 30vw, (min-width: 640px) 48vw, 96vw";
+  const fallback = heroFilename ? fallbackFormatFor(heroFilename) : null;
   return (
     <Link
       to={`/news/${slug}`}
@@ -30,12 +41,24 @@ export function NewsCard({
             isFeature ? "aspect-[16/10]" : "aspect-[4/3]",
           ].join(" ")}
         >
-          {hero ? (
-            <img
-              src={hero}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
+          {heroFilename && fallback ? (
+            <picture>
+              <source
+                type="image/avif"
+                srcSet={variantSrcset(heroFilename, "avif") ?? undefined}
+                sizes={sizes}
+              />
+              <img
+                src={variantUrl(heroFilename, isFeature ? 1200 : 600, fallback)}
+                srcSet={variantSrcset(heroFilename, fallback) ?? undefined}
+                sizes={sizes}
+                alt=""
+                loading={priority ? "eager" : "lazy"}
+                decoding={priority ? "sync" : "async"}
+                fetchPriority={priority ? "high" : undefined}
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+            </picture>
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-navy via-navy-deep to-sky/20" />
           )}

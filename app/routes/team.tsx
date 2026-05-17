@@ -4,7 +4,7 @@ import { db } from "~/db.server";
 import { media, players } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
-import { uploadUrlFor } from "~/lib/uploads";
+import { variantSrcset, variantUrl } from "~/lib/uploads";
 
 export function meta(_: Route.MetaArgs) {
   return [
@@ -56,16 +56,27 @@ export default function Team({ loaderData }: Route.ComponentProps) {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
             {squad.map((p) => {
-              const photo = uploadUrlFor(p.photoFilename);
+              const filename = p.photoFilename;
               return (
                 <article key={p.id} className="group">
                   <div className="aspect-[3/4] bg-navy/5 relative overflow-hidden">
-                    {photo ? (
-                      <img
-                        src={photo}
-                        alt={p.name}
-                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
+                    {filename ? (
+                      <picture>
+                        <source
+                          type="image/avif"
+                          srcSet={variantSrcset(filename, "avif") ?? undefined}
+                          sizes="(min-width: 1024px) 22vw, (min-width: 640px) 30vw, 48vw"
+                        />
+                        <img
+                          src={variantUrl(filename, 600, "jpeg")}
+                          srcSet={variantSrcset(filename, "jpeg") ?? undefined}
+                          sizes="(min-width: 1024px) 22vw, (min-width: 640px) 30vw, 48vw"
+                          alt={p.name}
+                          loading="lazy"
+                          decoding="async"
+                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                      </picture>
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-navy via-navy-deep to-sky/10" />
                     )}
