@@ -164,7 +164,7 @@ export async function action({ request }: Route.ActionArgs) {
       .where(eq(pitchOrders.id, order.id));
     return {
       error:
-        "Online payments aren't enabled yet. Email hello@doncastercityfc.com and we'll reserve your squares manually.",
+        "Online payments aren't enabled yet. Send us a note via the contact page and we'll reserve your squares manually.",
     };
   }
 

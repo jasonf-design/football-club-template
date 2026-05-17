@@ -66,21 +66,17 @@ export default function Contact() {
       />
       <Container size="wide" className="py-16 grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-16">
         <aside className="space-y-10">
-          <ContactBlock title="General">
-            <a
-              href="mailto:hello@doncastercityfc.com"
-              className="text-navy underline-offset-4 hover:underline"
-            >
-              hello@doncastercityfc.com
-            </a>
+          <ContactBlock title="General enquiries">
+            <p>
+              Use the form to reach the club for anything &mdash; match
+              enquiries, supporter questions, media requests.
+            </p>
           </ContactBlock>
           <ContactBlock title="Partnerships">
-            <a
-              href="mailto:partners@doncastercityfc.com"
-              className="text-navy underline-offset-4 hover:underline"
-            >
-              partners@doncastercityfc.com
-            </a>
+            <p>
+              Interested in sponsoring the club? Drop us a line via the form
+              and mention &ldquo;partnerships&rdquo; in the subject.
+            </p>
           </ContactBlock>
           <ContactBlock title="Matchday">
             <p>
