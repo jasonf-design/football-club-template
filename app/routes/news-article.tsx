@@ -40,7 +40,7 @@ export default function NewsArticle({ loaderData }: Route.ComponentProps) {
     <article>
       <header className="bg-paper-warm border-b border-line">
         <Container size="default" className="py-16 md:py-24">
-          <div className="text-[11px] uppercase tracking-[0.28em] text-sky-bright mb-5">
+          <div className="text-[11px] uppercase tracking-[0.28em] text-sky-deep mb-5">
             {published.toLocaleDateString("en-GB", {
               weekday: "long",
               day: "numeric",

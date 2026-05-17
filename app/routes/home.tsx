@@ -222,7 +222,7 @@ function NextFixtureCard({
           <div className="text-[10px] uppercase tracking-[0.28em] text-mute">
             Next match
           </div>
-          <div className="text-[10px] uppercase tracking-[0.28em] text-sky-bright font-semibold">
+          <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep font-semibold">
             {nextFixture.homeAway === "home" ? "Home" : "Away"}
           </div>
         </div>
@@ -347,7 +347,7 @@ function LatestNews({
       <Container size="wide" className="py-20 md:py-28">
         <div className="flex items-end justify-between mb-12">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.28em] text-sky-bright mb-3">
+            <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-3">
               From the club
             </div>
             <h2 className="font-serif text-4xl md:text-5xl text-navy leading-none">
@@ -592,7 +592,7 @@ function JoinTheClub() {
       <Container size="wide" className="py-24 md:py-32">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.28em] text-sky-bright mb-4">
+            <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-4">
               The matchday
             </div>
             <h2 className="font-serif text-4xl md:text-5xl text-navy leading-tight text-balance">

@@ -136,7 +136,7 @@ function UpcomingRow({
         <div className="scoreboard text-xl text-navy">
           {k.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
         </div>
-        <div className="text-[10px] uppercase tracking-[0.22em] text-sky-bright mt-1">
+        <div className="text-[10px] uppercase tracking-[0.22em] text-sky-deep mt-1">
           {fixture.homeAway === "home" ? "Home" : "Away"}
         </div>
       </div>

@@ -17,7 +17,7 @@ export function PageHeader({
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8 items-end">
           <div className="max-w-3xl">
             {eyebrow && (
-              <div className="text-[10px] uppercase tracking-[0.28em] text-sky-bright mb-4">
+              <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-4">
                 {eyebrow}
               </div>
             )}

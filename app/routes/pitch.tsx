@@ -325,7 +325,7 @@ export default function Pitch({ loaderData }: Route.ComponentProps) {
         <Container size="wide" className="py-16">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div>
-              <div className="text-[10px] uppercase tracking-[0.28em] text-sky-bright mb-3">
+              <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-3">
                 How it works
               </div>
               <h2 className="font-serif text-3xl text-navy leading-tight">
@@ -391,7 +391,7 @@ function SupportersWall({
       <Container size="wide" className="py-16">
         <div className="flex items-end justify-between mb-8">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.28em] text-sky-bright mb-3">
+            <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-3">
               The Supporters Wall
             </div>
             <h2 className="font-serif text-4xl text-navy leading-tight">

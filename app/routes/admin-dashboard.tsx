@@ -88,7 +88,7 @@ export default function AdminDashboard({ loaderData }: Route.ComponentProps) {
   return (
     <div className="p-8 md:p-12">
       <header className="mb-10">
-        <div className="text-[10px] uppercase tracking-[0.28em] text-sky-bright mb-2">
+        <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-2">
           Welcome back
         </div>
         <h1 className="font-serif text-4xl text-navy">Dashboard</h1>

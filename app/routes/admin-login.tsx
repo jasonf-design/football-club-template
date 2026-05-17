@@ -103,7 +103,7 @@ export default function AdminLogin() {
               DCFC ADMIN
             </div>
           </div>
-          <div className="text-[10px] uppercase tracking-[0.28em] text-sky-bright mb-3">
+          <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-3">
             Sign in
           </div>
           <h2 className="font-serif text-3xl text-navy">Staff login</h2>

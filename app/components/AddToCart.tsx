@@ -72,7 +72,7 @@ export function AddToCart({
       {added && (
         <Link
           to="/cart"
-          className="text-xs uppercase tracking-[0.18em] text-sky-bright hover:text-navy"
+          className="text-xs uppercase tracking-[0.18em] text-sky-deep hover:text-navy"
         >
           Added · view cart →
         </Link>

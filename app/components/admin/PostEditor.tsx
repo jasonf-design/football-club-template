@@ -49,7 +49,7 @@ export function PostEditor({
       Link.configure({
         openOnClick: false,
         autolink: true,
-        HTMLAttributes: { class: "text-sky-bright underline underline-offset-4" },
+        HTMLAttributes: { class: "text-sky-deep underline underline-offset-4" },
       }),
       Image.configure({
         HTMLAttributes: { class: "my-6 w-full h-auto" },

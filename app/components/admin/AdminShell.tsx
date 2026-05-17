@@ -18,7 +18,7 @@ export function AdminPage({
       <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
         <div>
           {eyebrow && (
-            <div className="text-[10px] uppercase tracking-[0.28em] text-sky-bright mb-2">
+            <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-2">
               {eyebrow}
             </div>
           )}

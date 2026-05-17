@@ -78,7 +78,7 @@ export default function Team({ loaderData }: Route.ComponentProps) {
                   </div>
                   <div className="pt-4">
                     {p.position && (
-                      <div className="text-[10px] uppercase tracking-[0.22em] text-sky-bright">
+                      <div className="text-[10px] uppercase tracking-[0.22em] text-sky-deep">
                         {p.position}
                       </div>
                     )}
