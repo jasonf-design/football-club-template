@@ -248,7 +248,7 @@ export type LeagueTable = {
   teams: LeagueTableTeam[];
 };
 
-type SnapshotKey = "league-table";
+type SnapshotKey = "league-table" | `match:${string}`;
 
 async function upsertSnapshot(key: SnapshotKey, data: unknown): Promise<void> {
   const now = new Date();
@@ -292,4 +292,66 @@ async function readSnapshot<T>(key: SnapshotKey): Promise<SnapshotRecord<T>> {
 
 export function readLeagueTable() {
   return readSnapshot<LeagueTable>("league-table");
+}
+
+// --- match detail ---
+
+export type MatchGoal = {
+  description: string;
+  minute: number;
+  penalty?: boolean;
+  sort?: number;
+  player?: {
+    id?: number;
+    "first-name"?: string;
+    "last-name"?: string;
+  };
+};
+
+export type MatchLineupEntry = {
+  shirt: number | null;
+  sort: number;
+  player: {
+    id?: number;
+    "first-name"?: string;
+    "last-name"?: string;
+  };
+};
+
+export type MatchTeamSide = {
+  id: number;
+  name: string;
+  score: number | null;
+  "half-time-score": number | null;
+  goals?: MatchGoal[];
+  "line-up"?: MatchLineupEntry[];
+};
+
+export type MatchDetail = {
+  id: number;
+  date: string;
+  time: string;
+  venue: string | null;
+  attendance?: number | null;
+  referee?: string | null;
+  competition: { id: number; name: string };
+  "home-team": MatchTeamSide;
+  "away-team": MatchTeamSide;
+  status: { full: string; short: string };
+};
+
+export async function fetchAndCacheMatchDetail(
+  externalId: string,
+): Promise<MatchDetail> {
+  const cached = await readSnapshot<MatchDetail>(`match:${externalId}`);
+  if (cached) return cached.data;
+  const data = await fwpFetch<{ match: MatchDetail }>("match.json", {
+    match: externalId,
+  });
+  await upsertSnapshot(`match:${externalId}`, data.match);
+  return data.match;
+}
+
+export async function readMatchDetail(externalId: string) {
+  return readSnapshot<MatchDetail>(`match:${externalId}`);
 }

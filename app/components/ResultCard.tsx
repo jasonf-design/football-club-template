@@ -1,4 +1,7 @@
+import { Link } from "react-router";
+
 export function ResultCard({
+  id,
   opponent,
   homeAway,
   homeScore,
@@ -6,6 +9,7 @@ export function ResultCard({
   competition,
   date,
 }: {
+  id?: string;
   opponent: string;
   homeAway: "home" | "away";
   homeScore: number | null;
@@ -30,8 +34,8 @@ export function ResultCard({
     L: "bg-red text-paper",
   };
 
-  return (
-    <article className="flex flex-col bg-paper border-l-2 border-navy pl-5 py-1">
+  const inner = (
+    <>
       <div className="text-[10px] uppercase tracking-[0.22em] text-mute">
         {competition} ·{" "}
         {date.toLocaleDateString("en-GB", {
@@ -64,6 +68,20 @@ export function ResultCard({
           </div>
         )}
       </div>
-    </article>
+    </>
   );
+
+  const baseCls =
+    "flex flex-col bg-paper border-l-2 border-navy pl-5 py-1";
+  if (id) {
+    return (
+      <Link
+        to={`/fixtures/${id}`}
+        className={`${baseCls} hover:bg-paper-warm/60 transition-colors`}
+      >
+        {inner}
+      </Link>
+    );
+  }
+  return <article className={baseCls}>{inner}</article>;
 }

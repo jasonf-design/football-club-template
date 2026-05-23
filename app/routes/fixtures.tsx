@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, gte, lt } from "drizzle-orm";
+import { Link } from "react-router";
 import type { Route } from "./+types/fixtures";
 import { db } from "~/db.server";
 import { fixtures } from "../../db/schema";
@@ -102,6 +103,7 @@ export default function Fixtures({ loaderData }: Route.ComponentProps) {
               {recent.map((r) => (
                 <ResultCard
                   key={r.id}
+                  id={r.id}
                   opponent={r.opponent}
                   homeAway={r.homeAway}
                   homeScore={r.homeScore}
@@ -308,6 +310,7 @@ function UpcomingRow({
   fixture,
 }: {
   fixture: {
+    id: string;
     competition: string;
     opponent: string;
     homeAway: "home" | "away";
@@ -317,37 +320,42 @@ function UpcomingRow({
 }) {
   const k = fixture.kickoff;
   return (
-    <li className="py-5 flex items-center gap-5">
-      <div className="text-center w-14 shrink-0">
-        <div className="scoreboard text-3xl leading-none text-navy">
-          {k.toLocaleDateString("en-GB", { day: "2-digit" })}
+    <li>
+      <Link
+        to={`/fixtures/${fixture.id}`}
+        className="py-5 flex items-center gap-5 hover:bg-paper-warm/60 transition-colors -mx-3 px-3"
+      >
+        <div className="text-center w-14 shrink-0">
+          <div className="scoreboard text-3xl leading-none text-navy">
+            {k.toLocaleDateString("en-GB", { day: "2-digit" })}
+          </div>
+          <div className="text-[10px] uppercase tracking-[0.22em] text-mute mt-1">
+            {k.toLocaleDateString("en-GB", { month: "short" })}
+          </div>
         </div>
-        <div className="text-[10px] uppercase tracking-[0.22em] text-mute mt-1">
-          {k.toLocaleDateString("en-GB", { month: "short" })}
+        <div className="flex-1 min-w-0">
+          <div className="text-[10px] uppercase tracking-[0.22em] text-mute">
+            {fixture.competition}
+          </div>
+          <div className="text-lg text-ink mt-0.5 truncate">
+            <span className="text-mute mr-1.5">
+              {fixture.homeAway === "home" ? "vs" : "at"}
+            </span>
+            {fixture.opponent}
+          </div>
+          {fixture.venue && (
+            <div className="text-xs text-mute mt-0.5">{fixture.venue}</div>
+          )}
         </div>
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-[10px] uppercase tracking-[0.22em] text-mute">
-          {fixture.competition}
+        <div className="text-right shrink-0">
+          <div className="scoreboard text-xl text-navy">
+            {k.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+          </div>
+          <div className="text-[10px] uppercase tracking-[0.22em] text-sky-deep mt-1">
+            {fixture.homeAway === "home" ? "Home" : "Away"}
+          </div>
         </div>
-        <div className="text-lg text-ink mt-0.5 truncate">
-          <span className="text-mute mr-1.5">
-            {fixture.homeAway === "home" ? "vs" : "at"}
-          </span>
-          {fixture.opponent}
-        </div>
-        {fixture.venue && (
-          <div className="text-xs text-mute mt-0.5">{fixture.venue}</div>
-        )}
-      </div>
-      <div className="text-right shrink-0">
-        <div className="scoreboard text-xl text-navy">
-          {k.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-        </div>
-        <div className="text-[10px] uppercase tracking-[0.22em] text-sky-deep mt-1">
-          {fixture.homeAway === "home" ? "Home" : "Away"}
-        </div>
-      </div>
+      </Link>
     </li>
   );
 }

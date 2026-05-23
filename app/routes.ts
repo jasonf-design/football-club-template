@@ -13,6 +13,7 @@ export default [
     route("news", "routes/news-index.tsx"),
     route("news/:slug", "routes/news-article.tsx"),
     route("fixtures", "routes/fixtures.tsx"),
+    route("fixtures/:id", "routes/fixture-detail.tsx"),
     route("team", "routes/team.tsx"),
     route("sponsors", "routes/sponsors.tsx"),
     route("contact", "routes/contact.tsx"),
