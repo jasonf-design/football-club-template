@@ -13,6 +13,7 @@ const NAV: NavItem[] = [
   { to: "/admin/shop", label: "Shop" },
   { to: "/admin/orders", label: "Orders" },
   { to: "/admin/media", label: "Media library" },
+  { to: "/admin/stats", label: "Stats sync" },
   { to: "/admin/messages", label: "Contact messages" },
   { to: "/admin/users", label: "Team access", adminOnly: true },
 ];

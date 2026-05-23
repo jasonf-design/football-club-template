@@ -9,7 +9,7 @@
  */
 import { and, eq } from "drizzle-orm";
 import { db } from "~/db.server";
-import { fixtures, type Fixture } from "../../db/schema";
+import { fixtures, fwpSnapshots, type Fixture } from "../../db/schema";
 
 const BASE = "https://api.footballwebpages.co.uk/v2";
 
@@ -220,4 +220,76 @@ export async function syncDcfcFixtures(): Promise<SyncResult> {
   }
 
   return result;
+}
+
+// --- snapshots (key/value JSON cache for static-during-offseason data) ---
+
+export type LeagueTableTeam = {
+  id: number;
+  name: string;
+  position: number;
+  "total-points": number;
+  outcome?: string;
+  zone?: string;
+  "all-matches": {
+    played: number;
+    won: number;
+    drawn: number;
+    lost: number;
+    for: number;
+    against: number;
+    "goal-difference": number;
+  };
+};
+
+export type LeagueTable = {
+  competition: { id: number; name: string };
+  description?: string;
+  teams: LeagueTableTeam[];
+};
+
+type SnapshotKey = "league-table";
+
+async function upsertSnapshot(key: SnapshotKey, data: unknown): Promise<void> {
+  const now = new Date();
+  const [existing] = await db
+    .select({ key: fwpSnapshots.key })
+    .from(fwpSnapshots)
+    .where(eq(fwpSnapshots.key, key))
+    .limit(1);
+  if (existing) {
+    await db
+      .update(fwpSnapshots)
+      .set({ data, fetchedAt: now })
+      .where(eq(fwpSnapshots.key, key));
+  } else {
+    await db.insert(fwpSnapshots).values({ key, data, fetchedAt: now });
+  }
+}
+
+export async function syncLeagueTable(): Promise<{ teams: number; fetchedAt: Date }> {
+  const { teamId } = config();
+  const data = await fwpFetch<{ "league-table": LeagueTable }>(
+    "league-table.json",
+    { team: teamId },
+  );
+  const table = data["league-table"];
+  await upsertSnapshot("league-table", table);
+  return { teams: table.teams.length, fetchedAt: new Date() };
+}
+
+export type SnapshotRecord<T> = { data: T; fetchedAt: Date } | null;
+
+async function readSnapshot<T>(key: SnapshotKey): Promise<SnapshotRecord<T>> {
+  const [row] = await db
+    .select()
+    .from(fwpSnapshots)
+    .where(eq(fwpSnapshots.key, key))
+    .limit(1);
+  if (!row) return null;
+  return { data: row.data as T, fetchedAt: row.fetchedAt };
+}
+
+export function readLeagueTable() {
+  return readSnapshot<LeagueTable>("league-table");
 }

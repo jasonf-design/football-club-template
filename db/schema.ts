@@ -234,6 +234,15 @@ export const shopOrders = sqliteTable("shop_orders", {
   updatedAt: updatedAt(),
 });
 
+export const fwpSnapshots = sqliteTable("fwp_snapshots", {
+  key: text("key").primaryKey(),
+  data: text("data", { mode: "json" }).notNull(),
+  fetchedAt: integer("fetched_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`)
+    .$onUpdate(() => new Date()),
+});
+
 export const contactMessages = sqliteTable("contact_messages", {
   id: id(),
   name: text("name").notNull(),

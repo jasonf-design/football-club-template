@@ -8,6 +8,13 @@
       "when": 1778941788021,
       "tag": "0000_right_toxin",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1779550501102,
+      "tag": "0001_boring_aaron_stack",
+      "breakpoints": true
     }
   ]
 }

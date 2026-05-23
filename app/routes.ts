@@ -56,6 +56,7 @@ export default [
       route("orders", "routes/admin-orders.tsx"),
       route("messages", "routes/admin-messages.tsx"),
       route("media", "routes/admin-media.tsx"),
+      route("stats", "routes/admin-stats.tsx"),
       route("account", "routes/admin-account.tsx"),
       route("users", "routes/admin-users.tsx"),
       route("users/new", "routes/admin-users-new.tsx"),
