@@ -4,10 +4,12 @@ import type { Route } from "./+types/admin-fixtures";
 import { db } from "~/db.server";
 import { fixtures } from "../../db/schema";
 import { requireAdmin } from "~/lib/session.server";
+import { FwpError, syncDcfcFixtures, type SyncResult } from "~/lib/fwp.server";
 import {
   AdminPage,
   DangerButton,
   LinkButton,
+  SecondaryButton,
   StatusPill,
   Table,
   Td,
@@ -24,15 +26,40 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { fixtures: all };
 }
 
-export async function action({ request }: Route.ActionArgs) {
+type ActionResult =
+  | { ok: true }
+  | { ok: false }
+  | { sync: SyncResult }
+  | { syncError: string };
+
+export async function action({ request }: Route.ActionArgs): Promise<ActionResult> {
   await requireAdmin(request);
   const form = await request.formData();
-  const id = form.get("id");
-  if (typeof id !== "string") return { ok: false };
-  if (form.get("intent") === "delete") {
-    await db.delete(fixtures).where(eq(fixtures.id, id));
+  const intent = form.get("intent");
+
+  if (intent === "sync-fwp") {
+    try {
+      const sync = await syncDcfcFixtures();
+      return { sync };
+    } catch (err) {
+      const msg =
+        err instanceof FwpError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Unknown error";
+      return { syncError: msg };
+    }
   }
-  return { ok: true };
+
+  if (intent === "delete") {
+    const id = form.get("id");
+    if (typeof id !== "string") return { ok: false };
+    await db.delete(fixtures).where(eq(fixtures.id, id));
+    return { ok: true };
+  }
+
+  return { ok: false };
 }
 
 const STATUS_PILL: Record<
@@ -48,15 +75,43 @@ const STATUS_PILL: Record<
 
 export default function AdminFixturesList({
   loaderData,
+  actionData,
 }: Route.ComponentProps) {
   const { fixtures } = loaderData;
+  const sync = actionData && "sync" in actionData ? actionData.sync : null;
+  const syncError =
+    actionData && "syncError" in actionData ? actionData.syncError : null;
   return (
     <AdminPage
       eyebrow="Schedule"
       title="Fixtures & results"
       description="Manually manage every match. Drafts and live updates show on the public site immediately."
-      actions={<LinkButton to="/admin/fixtures/new">+ Add fixture</LinkButton>}
+      actions={
+        <>
+          <Form method="post">
+            <input type="hidden" name="intent" value="sync-fwp" />
+            <SecondaryButton type="submit">Sync from FWP</SecondaryButton>
+          </Form>
+          <LinkButton to="/admin/fixtures/new">+ Add fixture</LinkButton>
+        </>
+      }
     >
+      {sync && (
+        <div className="mb-6 border border-line bg-paper-warm/50 p-4 text-sm text-navy">
+          <div className="font-semibold mb-1">Sync complete</div>
+          <div className="text-mute">
+            Fetched {sync.fetched} · created {sync.created} · updated{" "}
+            {sync.updated} · unchanged {sync.unchanged}
+            {sync.skipped.length > 0 && ` · skipped ${sync.skipped.length}`}
+          </div>
+        </div>
+      )}
+      {syncError && (
+        <div className="mb-6 border border-red-300 bg-red-50 p-4 text-sm text-red-900">
+          <div className="font-semibold mb-1">Sync failed</div>
+          <div>{syncError}</div>
+        </div>
+      )}
       {fixtures.length === 0 ? (
         <div className="bg-paper border border-line p-12 text-center">
           <div className="font-serif text-2xl text-navy">

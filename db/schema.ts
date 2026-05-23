@@ -117,7 +117,7 @@ export const fixtures = sqliteTable(
     homeScore: integer("home_score"),
     awayScore: integer("away_score"),
     notes: text("notes"),
-    source: text("source", { enum: ["manual", "fa"] })
+    source: text("source", { enum: ["manual", "fwp"] })
       .notNull()
       .default("manual"),
     externalId: text("external_id"),
