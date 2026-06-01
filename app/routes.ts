@@ -33,9 +33,6 @@ export default [
   // Stripe webhook — public, no layout, no auth (signature verified)
   route("api/stripe/webhook", "routes/stripe-webhook.tsx"),
 
-  // Partnership EOI form submission
-  route("api/partnership-eoi", "routes/api.partnership-eoi.tsx"),
-
   // Admin CMS
   ...prefix("admin", [
     route("login", "routes/admin-login.tsx"),
