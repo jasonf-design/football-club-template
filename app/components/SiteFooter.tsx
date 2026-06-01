@@ -125,6 +125,12 @@ export function SiteFooter() {
             © {year} Doncaster City Football Club. All rights reserved.
           </div>
           <div className="flex gap-5">
+            <Link to="/privacy" className="hover:text-sky transition-colors">
+              Privacy policy
+            </Link>
+            <Link to="/terms" className="hover:text-sky transition-colors">
+              Terms &amp; conditions
+            </Link>
             <Link to="/contact" className="hover:text-sky transition-colors">
               Contact
             </Link>

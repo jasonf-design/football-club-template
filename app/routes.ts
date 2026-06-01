@@ -31,6 +31,8 @@ export default [
     route("cart", "routes/cart.tsx"),
     route("support", "routes/support.tsx"),
     route("support/success", "routes/support-success.tsx"),
+    route("privacy", "routes/privacy.tsx"),
+    route("terms", "routes/terms.tsx"),
   ]),
 
   // Uploaded image serving — public, no layout, no auth
