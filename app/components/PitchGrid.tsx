@@ -258,7 +258,7 @@ export function PitchGrid({
 
         {selected.size === 0 ? (
           <p className="mt-6 text-sm text-mute leading-relaxed">
-            Click any available square on the pitch to add it to your selection.
+            Click any available square on the virtual pitch to add it to your selection.
             Pick as many as you like — each is £{(config.pricePence / 100).toFixed(0)}.
           </p>
         ) : !showForm ? (
@@ -276,7 +276,7 @@ export function PitchGrid({
           <Form method="post" className="mt-6 space-y-4">
             <input type="hidden" name="squareIds" value={[...selected].join(",")} />
             <CheckoutField name="displayName" label="Name to display"
-              hint="On the pitch and in the programme" required maxLength={60} />
+              hint="On the virtual pitch and in the programme" required maxLength={60} />
             <CheckoutField name="email" label="Email" type="email"
               hint="For your receipt" required />
             <CheckoutField name="contactName" label="Your name" hint="Optional" />

@@ -18,11 +18,11 @@ import {
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Sponsor a square · Doncaster City FC" },
+    { title: "Sponsor a virtual square · Doncaster City FC" },
     {
       name: "description",
       content:
-        "Sponsor a square of the Doncaster City FC pitch from £50. Your name on the pitch map, in the matchday programme, and on the Supporters Wall for the whole season.",
+        "Sponsor a square of the Doncaster City FC virtual pitch from £50. Your name on the virtual pitch map, in the matchday programme, and on the Supporters Wall for the whole season.",
     },
   ];
 }
@@ -186,8 +186,8 @@ export async function action({ request }: Route.ActionArgs) {
             currency: "gbp",
             unit_amount: pricePence,
             product_data: {
-              name: "Pitch square sponsorship",
-              description: `Doncaster City FC · ${rows.length} square${rows.length === 1 ? "" : "s"} · Display name: "${displayName}"`,
+              name: "Virtual pitch square sponsorship",
+              description: `Doncaster City FC · ${rows.length} virtual square${rows.length === 1 ? "" : "s"} · Display name: "${displayName}"`,
             },
           },
         },
@@ -256,8 +256,8 @@ export default function Pitch({ loaderData }: Route.ComponentProps) {
     <>
       <PageHeader
         eyebrow="Pitch sponsorship"
-        title="Put your name on our pitch."
-        lede={`Sponsor a square of the playing surface for the season. Your name appears on the pitch map, in the matchday programme, and on the Supporters Wall — for just £${(config.pricePence / 100).toFixed(0)} per square.`}
+        title="Put your name on our virtual pitch."
+        lede={`Sponsor a square of the virtual playing surface for the season. Your name appears on the virtual pitch map, in the matchday programme, and on the Supporters Wall — for just £${(config.pricePence / 100).toFixed(0)} per square.`}
       />
 
       {/* Progress strip */}
@@ -340,7 +340,7 @@ export default function Pitch({ loaderData }: Route.ComponentProps) {
             </div>
             <ol className="space-y-4 text-ink">
               <Step n={1}>
-                Tap any available square on the pitch above. Pick as many as
+                Tap any available square on the virtual pitch above. Pick as many as
                 you like.
               </Step>
               <Step n={2}>
@@ -349,10 +349,10 @@ export default function Pitch({ loaderData }: Route.ComponentProps) {
               </Step>
               <Step n={3}>
                 Pay securely through Stripe. £
-                {(config.pricePence / 100).toFixed(0)} per square.
+                {(config.pricePence / 100).toFixed(0)} per virtual square.
               </Step>
               <Step n={4}>
-                Your name lands on the pitch map, the matchday programme and
+                Your name lands on the virtual pitch map, the matchday programme and
                 the Supporters Wall — all season long.
               </Step>
             </ol>
@@ -411,7 +411,7 @@ function SupportersWall({
               The Supporters Wall
             </div>
             <h2 className="font-serif text-4xl text-navy leading-tight">
-              Every name on our pitch.
+              Every name on our virtual pitch.
             </h2>
           </div>
           <div className="text-mute text-sm hidden sm:block">

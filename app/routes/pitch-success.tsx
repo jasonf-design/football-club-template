@@ -101,7 +101,7 @@ export default function PitchSuccess({ loaderData }: Route.ComponentProps) {
         <PageHeader
           eyebrow="Thank you"
           title="We're processing your sponsorship."
-          lede="Your payment is on its way through. Refresh in a moment to see your name on the pitch."
+          lede="Your payment is on its way through. Refresh in a moment to see your name on the virtual pitch."
         />
         <Container size="wide" className="py-12 text-center">
           <Link
@@ -118,7 +118,7 @@ export default function PitchSuccess({ loaderData }: Route.ComponentProps) {
   return (
     <>
       <PageHeader
-        eyebrow={isPaid ? "You're on the pitch" : "Almost there"}
+        eyebrow={isPaid ? "You're on the virtual pitch" : "Almost there"}
         title={isPaid ? "Welcome to the wall." : "Confirming your payment…"}
         lede={
           isPaid

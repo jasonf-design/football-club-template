@@ -427,11 +427,11 @@ function PitchSponsorCTA() {
             </div>
             <h2 className="font-serif text-4xl md:text-5xl leading-tight text-balance">
               Put your name
-              <br /> on our <span className="italic text-sky">pitch.</span>
+              <br /> on our <span className="italic text-sky">virtual pitch.</span>
             </h2>
             <p className="mt-6 text-paper/70 leading-relaxed max-w-md">
-              For just £50, sponsor a square of the playing surface. Your name
-              — or your business — appears on the pitch map and in the matchday
+              For just £50, sponsor a square of the virtual playing surface. Your name
+              — or your business — appears on the virtual pitch map and in the matchday
               programme all season long.
             </p>
             <div className="mt-8 flex flex-wrap gap-3 items-center">
