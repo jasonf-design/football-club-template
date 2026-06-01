@@ -8,6 +8,7 @@ import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
 import { PitchGrid } from "~/components/PitchGrid";
 import { expireStaleHolds, HOLD_TTL_MS } from "~/lib/pitch.server";
+import { pitchSponsors, type PitchSponsor } from "~/lib/pitchSponsors";
 import {
   getStripe,
   isStripeConfigured,
@@ -52,6 +53,9 @@ export async function loader() {
   const rows = all.length === 0 ? 0 : Math.max(...all.map((s) => s.row));
   const cols = all.length === 0 ? 0 : Math.max(...all.map((s) => s.col));
 
+  // Include commercial sponsor squares in the sold/raised totals
+  const sponsorSquareCount = pitchSponsors.reduce((n, s) => n + s.squares.length, 0);
+
   return {
     squares: all.map((s) => ({
       id: s.id,
@@ -63,11 +67,12 @@ export async function loader() {
       pricePence: s.pricePence,
     })),
     config: { rows, cols, pricePence },
-    soldCount: sold.length,
+    soldCount: sold.length + sponsorSquareCount,
     totalCount: all.length,
-    raisedPence: sold.length * pricePence,
+    raisedPence: (sold.length + sponsorSquareCount) * pricePence,
     goalPence: all.length * pricePence,
     supporters,
+    commercialSponsors: pitchSponsors,
     stripeReady: isStripeConfigured(),
   };
 }
@@ -235,6 +240,7 @@ export default function Pitch({ loaderData }: Route.ComponentProps) {
     raisedPence,
     goalPence,
     supporters,
+    commercialSponsors,
     stripeReady,
   } = loaderData;
   const result = useActionData<typeof action>();
@@ -318,7 +324,7 @@ export default function Pitch({ loaderData }: Route.ComponentProps) {
       </Container>
 
       {/* Supporters wall */}
-      <SupportersWall supporters={supporters} />
+      <SupportersWall supporters={supporters} commercialSponsors={commercialSponsors} />
 
       {/* How it works */}
       <section className="bg-paper-warm border-y border-line">
@@ -374,8 +380,15 @@ function Step({
   );
 }
 
+const TIER_BADGE: Record<string, { bg: string; text: string; border: string }> = {
+  platinum: { bg: "rgba(212,175,55,0.15)", text: "#8a6000", border: "rgba(212,175,55,0.5)" },
+  gold:     { bg: "rgba(200,160,40,0.12)", text: "#7a5000", border: "rgba(200,160,40,0.4)" },
+  silver:   { bg: "rgba(160,170,180,0.12)", text: "#445566", border: "rgba(160,170,180,0.4)" },
+};
+
 function SupportersWall({
   supporters,
+  commercialSponsors,
 }: {
   supporters: {
     id: number;
@@ -384,12 +397,15 @@ function SupportersWall({
     row: number;
     col: number;
   }[];
+  commercialSponsors: PitchSponsor[];
 }) {
-  if (supporters.length === 0) return null;
+  const totalNames = commercialSponsors.length + supporters.length;
+  if (totalNames === 0) return null;
+
   return (
-    <section>
+    <section className="border-t border-line">
       <Container size="wide" className="py-16">
-        <div className="flex items-end justify-between mb-8">
+        <div className="flex items-end justify-between mb-10">
           <div>
             <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-3">
               The Supporters Wall
@@ -399,20 +415,71 @@ function SupportersWall({
             </h2>
           </div>
           <div className="text-mute text-sm hidden sm:block">
-            {supporters.length} backer{supporters.length === 1 ? "" : "s"}
+            {totalNames} {totalNames === 1 ? "name" : "names"}
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
-          {supporters.map((s) => (
-            <div
-              key={s.id}
-              className="py-2 border-b border-line text-ink truncate"
-              title={`${s.zone} · R${s.row} · C${s.col}`}
-            >
-              {s.sponsorName ?? "Anonymous backer"}
+
+        {/* Commercial sponsors — featured row */}
+        {commercialSponsors.length > 0 && (
+          <div className="mb-10">
+            <div className="text-[10px] uppercase tracking-[0.22em] text-mute mb-4">
+              Commercial sponsors
             </div>
-          ))}
-        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {commercialSponsors.map((s) => {
+                const badge = TIER_BADGE[s.tier];
+                return (
+                  <a
+                    key={s.id}
+                    href={s.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-4 px-4 py-3 border transition-colors hover:border-navy/30 hover:bg-paper-warm/40"
+                    style={{ borderColor: badge.border, background: badge.bg }}
+                  >
+                    {s.logo && (
+                      <img src={s.logo} alt={s.name} className="h-8 w-auto object-contain shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <div className="font-semibold text-navy text-sm truncate">{s.name}</div>
+                      <div
+                        className="text-[10px] uppercase tracking-widest mt-0.5 font-medium"
+                        style={{ color: badge.text }}
+                      >
+                        {s.tier} · {s.squares.length} {s.squares.length === 1 ? "square" : "squares"}
+                      </div>
+                    </div>
+                    {s.website && (
+                      <span className="ml-auto text-mute text-xs shrink-0">↗</span>
+                    )}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Individual supporters */}
+        {supporters.length > 0 && (
+          <>
+            {commercialSponsors.length > 0 && (
+              <div className="text-[10px] uppercase tracking-[0.22em] text-mute mb-4">
+                Individual backers
+              </div>
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-0">
+              {supporters.map((s) => (
+                <div
+                  key={s.id}
+                  className="py-2.5 border-b border-line text-sm text-ink truncate"
+                  title={`R${s.row} · C${s.col}`}
+                >
+                  {s.sponsorName ?? "Anonymous backer"}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </Container>
     </section>
   );
