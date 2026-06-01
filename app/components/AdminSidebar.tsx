@@ -25,6 +25,12 @@ const TEAM_LINKS = [
   { to: "/admin/players?team=u21", label: "Under 21s", teamParam: "u21" },
 ];
 
+const COACHING_LINKS = [
+  { to: "/admin/coaching?team=first", label: "1st Team", teamParam: "first" },
+  { to: "/admin/coaching?team=u21", label: "Under 21s", teamParam: "u21" },
+  { to: "/admin/coaching?team=u18", label: "Under 18s", teamParam: "u18" },
+];
+
 function navClass(isActive: boolean) {
   return [
     "block px-3 py-2 text-sm rounded transition-colors",
@@ -41,6 +47,7 @@ export function AdminSidebar({
 }) {
   const location = useLocation();
   const onPlayersPage = location.pathname.startsWith("/admin/players");
+  const onCoachingPage = location.pathname.startsWith("/admin/coaching");
   const currentTeam = new URLSearchParams(location.search).get("team") ?? "first";
 
   return (
@@ -77,6 +84,25 @@ export function AdminSidebar({
           </div>
           {TEAM_LINKS.map(({ to, label, teamParam }) => {
             const isActive = onPlayersPage && currentTeam === teamParam;
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={navClass(isActive) + " pl-6" + (isActive ? " !pl-[22px]" : "")}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Coaching Staff group */}
+        <div className="pt-1 pb-0.5">
+          <div className="px-3 py-1 text-[9px] uppercase tracking-[0.22em] text-paper/40">
+            Coaching Staff
+          </div>
+          {COACHING_LINKS.map(({ to, label, teamParam }) => {
+            const isActive = onCoachingPage && currentTeam === teamParam;
             return (
               <Link
                 key={to}

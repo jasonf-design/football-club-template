@@ -1,7 +1,11 @@
+import { and, asc, eq, inArray } from "drizzle-orm";
 import type { Route } from "./+types/team-u18";
+import { db } from "~/db.server";
+import { coachingStaff, media } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
 import { Crest } from "~/components/Crest";
+import { CoachingSection } from "~/components/CoachingSection";
 
 export function meta(_: Route.MetaArgs) {
   return [
@@ -14,17 +18,29 @@ export function meta(_: Route.MetaArgs) {
 }
 
 export async function loader() {
-  return null;
+  const staffRows = await db
+    .select({ name: coachingStaff.name, role: coachingStaff.role, photoMediaId: coachingStaff.photoMediaId })
+    .from(coachingStaff)
+    .where(and(eq(coachingStaff.team, "u18"), eq(coachingStaff.active, true)))
+    .orderBy(asc(coachingStaff.sortOrder), asc(coachingStaff.name));
+
+  const staffPhotoIds = staffRows.map((s) => s.photoMediaId).filter(Boolean) as string[];
+  const staffPhotos = staffPhotoIds.length
+    ? await db.select({ id: media.id, filename: media.filename }).from(media).where(inArray(media.id, staffPhotoIds))
+    : [];
+  const staffPhotoById = new Map(staffPhotos.map((m) => [m.id, m.filename]));
+
+  return {
+    staff: staffRows.map((s) => ({
+      name: s.name,
+      role: s.role,
+      photoFilename: s.photoMediaId ? (staffPhotoById.get(s.photoMediaId) ?? null) : null,
+    })),
+  };
 }
 
-// Update these when coaching staff is confirmed
-const COACHING_STAFF = [
-  { name: "TBC", role: "Manager" },
-  { name: "TBC", role: "Assistant Manager" },
-  { name: "TBC", role: "Coach" },
-];
-
-export default function TeamU18(_: Route.ComponentProps) {
+export default function TeamU18({ loaderData }: Route.ComponentProps) {
+  const { staff } = loaderData;
   return (
     <>
       <PageHeader
@@ -63,18 +79,7 @@ export default function TeamU18(_: Route.ComponentProps) {
           </div>
         </div>
 
-        {/* Coaching staff */}
-        <div className="mt-16 pt-12 border-t border-line">
-          <div className="text-[10px] uppercase tracking-[0.28em] text-mute mb-8">Coaching staff</div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-w-2xl">
-            {COACHING_STAFF.map((coach) => (
-              <div key={`${coach.role}-${coach.name}`} className="border border-line bg-paper-warm/30 p-4">
-                <div className="text-[9px] uppercase tracking-[0.2em] text-sky-deep mb-1">{coach.role}</div>
-                <div className="font-serif text-base text-navy">{coach.name}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <CoachingSection staff={staff} />
 
         {/* Fixtures placeholder */}
         <div className="mt-16 pt-12 border-t border-line">

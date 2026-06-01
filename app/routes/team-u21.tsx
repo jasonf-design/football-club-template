@@ -2,10 +2,11 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { Link } from "react-router";
 import type { Route } from "./+types/team-u21";
 import { db } from "~/db.server";
-import { media, players } from "../../db/schema";
+import { coachingStaff, media, players } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
 import { variantSrcset, variantUrl } from "~/lib/uploads";
+import { CoachingSection } from "~/components/CoachingSection";
 
 export function meta(_: Route.MetaArgs) {
   return [
@@ -50,11 +51,28 @@ export async function loader() {
     : [];
   const logoById = new Map(logoMedia.map((m) => [m.id, m.filename]));
 
+  const staffRows = await db
+    .select({ name: coachingStaff.name, role: coachingStaff.role, photoMediaId: coachingStaff.photoMediaId })
+    .from(coachingStaff)
+    .where(and(eq(coachingStaff.team, "u21"), eq(coachingStaff.active, true)))
+    .orderBy(asc(coachingStaff.sortOrder), asc(coachingStaff.name));
+
+  const staffPhotoIds = staffRows.map((s) => s.photoMediaId).filter(Boolean) as string[];
+  const staffPhotos = staffPhotoIds.length
+    ? await db.select({ id: media.id, filename: media.filename }).from(media).where(inArray(media.id, staffPhotoIds))
+    : [];
+  const staffPhotoById = new Map(staffPhotos.map((m) => [m.id, m.filename]));
+
   return {
     squad: squad.map((p) => ({
       ...p,
       sponsor1LogoFilename: p.sponsor1LogoMediaId ? (logoById.get(p.sponsor1LogoMediaId) ?? null) : null,
       sponsor2LogoFilename: p.sponsor2LogoMediaId ? (logoById.get(p.sponsor2LogoMediaId) ?? null) : null,
+    })),
+    staff: staffRows.map((s) => ({
+      name: s.name,
+      role: s.role,
+      photoFilename: s.photoMediaId ? (staffPhotoById.get(s.photoMediaId) ?? null) : null,
     })),
   };
 }
@@ -62,7 +80,7 @@ export async function loader() {
 type SquadPlayer = Awaited<ReturnType<typeof loader>>["squad"][number];
 
 export default function TeamU21({ loaderData }: Route.ComponentProps) {
-  const { squad } = loaderData;
+  const { squad, staff } = loaderData;
   return (
     <>
       <PageHeader
@@ -85,6 +103,7 @@ export default function TeamU21({ loaderData }: Route.ComponentProps) {
             {squad.map((p) => <PlayerCard key={p.id} player={p} />)}
           </div>
         )}
+        <CoachingSection staff={staff} />
       </Container>
     </>
   );

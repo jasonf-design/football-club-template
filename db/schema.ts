@@ -144,6 +144,20 @@ export const fixtures = sqliteTable(
   }),
 );
 
+export const coachingStaff = sqliteTable("coaching_staff", {
+  id: id(),
+  team: text("team", { enum: ["first", "u21", "u18"] }).notNull(),
+  name: text("name").notNull(),
+  role: text("role").notNull(),
+  photoMediaId: text("photo_media_id").references(() => media.id, {
+    onDelete: "set null",
+  }),
+  sortOrder: integer("sort_order").notNull().default(0),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
 export const sponsors = sqliteTable("sponsors", {
   id: id(),
   name: text("name").notNull(),
@@ -280,3 +294,4 @@ export type PitchOrder = typeof pitchOrders.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type ShopOrder = typeof shopOrders.$inferSelect;
 export type Media = typeof media.$inferSelect;
+export type CoachingStaff = typeof coachingStaff.$inferSelect;
