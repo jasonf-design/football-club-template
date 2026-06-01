@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useSearchParams } from "react-router";
 import type { Route } from "./+types/partnership";
 
 export function meta(_: Route.MetaArgs) {
@@ -14,6 +15,9 @@ export function meta(_: Route.MetaArgs) {
 
 export default function Partnership() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [params] = useSearchParams();
+  const submitted = params.get("submitted") === "1";
+  const error = params.get("error") === "1";
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -35,17 +39,15 @@ export default function Partnership() {
             last = h;
           }
         }
-        // Keep polling until height is stable for 3 checks, or 12s has passed
         if (stable < 3) {
           timer = setTimeout(measure, 400);
         }
       } catch {
-        // cross-origin guard (shouldn't happen — same origin)
+        // cross-origin guard
       }
     };
 
     iframe.addEventListener("load", measure);
-    // Kick off early in case load already fired
     timer = setTimeout(measure, 200);
 
     return () => {
@@ -55,11 +57,23 @@ export default function Partnership() {
   }, []);
 
   return (
-    <iframe
-      ref={iframeRef}
-      src="/partnership-brochure.html"
-      title="Doncaster City FC 2026/27 Partnership Brochure"
-      style={{ width: "100%", minHeight: "100vh", border: "none", display: "block", overflow: "hidden" }}
-    />
+    <>
+      {submitted && (
+        <div className="bg-navy text-paper px-6 py-4 text-center text-sm font-medium tracking-wide">
+          Thanks — we&apos;ll be in touch within 2 working days.
+        </div>
+      )}
+      {error && (
+        <div className="bg-red/10 text-red px-6 py-4 text-center text-sm font-medium tracking-wide">
+          Something went wrong — please check your details and try again.
+        </div>
+      )}
+      <iframe
+        ref={iframeRef}
+        src="/partnership-brochure.html"
+        title="Doncaster City FC 2026/27 Partnership Brochure"
+        style={{ width: "100%", minHeight: "100vh", border: "none", display: "block", overflow: "hidden" }}
+      />
+    </>
   );
 }

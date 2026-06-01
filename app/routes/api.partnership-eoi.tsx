@@ -1,3 +1,4 @@
+import { redirect } from "react-router";
 import type { Route } from "./+types/api.partnership-eoi";
 import { db } from "~/db.server";
 import { contactMessages } from "../../db/schema";
@@ -5,31 +6,25 @@ import { sendContactNotification } from "~/lib/email.server";
 
 export async function action({ request }: Route.ActionArgs) {
   if (request.method !== "POST") {
-    return Response.json({ ok: false, error: "Method not allowed" }, { status: 405 });
+    return new Response("Method not allowed", { status: 405 });
   }
 
-  let body: Record<string, string>;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ ok: false, error: "Invalid request" }, { status: 400 });
-  }
-
-  const contact = String(body.contact ?? "").trim();
-  const email = String(body.email ?? "").trim();
-  const pkg = String(body.package ?? "").trim();
+  const formData = await request.formData();
+  const contact = String(formData.get("contact") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
+  const pkg = String(formData.get("package") ?? "").trim();
 
   if (!contact || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return Response.json({ ok: false, error: "Name and email are required" }, { status: 422 });
+    return redirect("/partnership?error=1");
   }
 
   const messageParts = [
     pkg ? `Package: ${pkg}` : null,
-    body.company ? `Company: ${body.company}` : null,
-    body.position ? `Position: ${body.position}` : null,
-    body.phone ? `Phone: ${body.phone}` : null,
-    body.address ? `Address: ${body.address}` : null,
-    body.notes ? `\nNotes: ${body.notes}` : null,
+    formData.get("company") ? `Company: ${formData.get("company")}` : null,
+    formData.get("position") ? `Position: ${formData.get("position")}` : null,
+    formData.get("phone") ? `Phone: ${formData.get("phone")}` : null,
+    formData.get("address") ? `Address: ${formData.get("address")}` : null,
+    formData.get("notes") ? `\nNotes: ${formData.get("notes")}` : null,
   ].filter(Boolean);
 
   const message = messageParts.join("\n");
@@ -46,5 +41,5 @@ export async function action({ request }: Route.ActionArgs) {
 
   await sendContactNotification({ name: contact, email, subject, message });
 
-  return Response.json({ ok: true });
+  return redirect("/partnership?submitted=1");
 }
