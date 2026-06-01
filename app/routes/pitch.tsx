@@ -260,6 +260,17 @@ export default function Pitch({ loaderData }: Route.ComponentProps) {
         lede={`Sponsor a square of the virtual playing surface for the season. Your name appears on the virtual pitch map, in the matchday programme, and on the Supporters Wall — for just £${(config.pricePence / 100).toFixed(0)} per square.`}
       />
 
+      {/* See the pitch CTA */}
+      <div className="bg-sky/15 border-b border-sky/30 py-5 text-center">
+        <a
+          href="#pitch-grid"
+          className="inline-flex items-center gap-3 bg-sky text-navy px-8 py-3.5 text-sm font-bold tracking-widest uppercase hover:bg-sky-deep hover:text-paper transition-colors shadow-sm"
+        >
+          <span>See the pitch</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M8 3v10M3 9l5 5 5-5"/></svg>
+        </a>
+      </div>
+
       {/* Progress strip */}
       <section className="bg-paper-warm border-y border-line">
         <Container size="wide" className="py-8">
@@ -314,14 +325,16 @@ export default function Pitch({ loaderData }: Route.ComponentProps) {
       </section>
 
       {/* Grid + side panel */}
-      <Container size="wide" className="py-12">
-        <PitchGrid
-          squares={squares}
-          config={config}
-          stripeReady={stripeReady}
-          error={result?.error}
-        />
-      </Container>
+      <div id="pitch-grid">
+        <Container size="wide" className="py-12">
+          <PitchGrid
+            squares={squares}
+            config={config}
+            stripeReady={stripeReady}
+            error={result?.error}
+          />
+        </Container>
+      </div>
 
       {/* Supporters wall */}
       <SupportersWall supporters={supporters} commercialSponsors={commercialSponsors} />
