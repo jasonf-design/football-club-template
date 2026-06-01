@@ -81,7 +81,7 @@ export async function action({ request }: Route.ActionArgs) {
     sponsor2LogoMediaId: parsed.data.sponsor2LogoMediaId || null,
     sponsorshipUrl: parsed.data.sponsorshipUrl ?? null,
   });
-  throw redirect("/admin/players");
+  throw redirect(`/admin/players?team=${parsed.data.team ?? "first"}`);
 }
 
 const TEAM_LABEL = { first: "1st Team", u21: "Under 21s" };
