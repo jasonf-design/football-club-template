@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Form } from "react-router";
+import { getSponsorAt, type PitchSponsor, type SponsorTier } from "~/lib/pitchSponsors";
 
 export type PitchSquare = {
   id: number;
@@ -17,6 +18,40 @@ export type PitchGridConfig = {
   pricePence: number;
 };
 
+const COLS = 15;
+const ROWS = 10;
+
+// SVG viewBox units = 10 per cell → 150×100
+const VW = 150;
+const VH = 100;
+const CW = VW / COLS; // 10
+const CH = VH / ROWS; // 10
+
+// Pitch markings calculated from real pitch proportions (105m × 68m)
+const M = {
+  centreX: VW / 2,  // 75
+  centreY: VH / 2,  // 50
+  centreR: 13.07,   // 9.15m ÷ 7m × 10 = 13.07
+
+  // Penalty areas (both ends)
+  penAreaW: 57.6,   // 40.32m ÷ 7m × 10
+  penAreaH: 24.26,  // 16.5m ÷ 6.8m × 10
+  // 6-yard boxes
+  sixYardW: 26.17,  // 18.32m ÷ 7m × 10
+  sixYardH: 8.09,   // 5.5m ÷ 6.8m × 10
+
+  penSpotY: 16.18,  // 11m ÷ 6.8m × 10 from goal line
+  penArcR: 9.15 / 6.8 * 10, // ~13.46
+
+  cornerR: 1.43,    // 1m ÷ 7m × 10
+
+  goalW: 10.46,     // 7.32m ÷ 7m × 10
+  goalH: 2.5,       // visual depth (goals extend off pitch)
+};
+
+const LINE = "rgba(255,255,255,0.55)";
+const LINE_W = 0.4;
+
 export function PitchGrid({
   squares,
   config,
@@ -30,6 +65,14 @@ export function PitchGrid({
 }) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [showForm, setShowForm] = useState(false);
+  const [hoverSponsor, setHoverSponsor] = useState<PitchSponsor | null>(null);
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
+
+  const byRowCol = useMemo(() => {
+    const m = new Map<string, PitchSquare>();
+    for (const s of squares) m.set(`${s.row}-${s.col}`, s);
+    return m;
+  }, [squares]);
 
   const byId = useMemo(() => {
     const m = new Map<number, PitchSquare>();
@@ -54,76 +97,198 @@ export function PitchGrid({
     setShowForm(false);
   }
 
-  // Group squares into zone bands.
-  const zones = useMemo(() => {
-    const seen = new Set<string>();
-    const order: string[] = [];
-    for (const s of squares) {
-      if (!seen.has(s.zone)) {
-        seen.add(s.zone);
-        order.push(s.zone);
+  // Build grid cells: 15×10 with their sponsor/purchase status
+  const cells = useMemo(() => {
+    const out = [];
+    for (let r = 1; r <= ROWS; r++) {
+      for (let c = 1; c <= COLS; c++) {
+        const sq = byRowCol.get(`${r}-${c}`) ?? null;
+        const sponsor = getSponsorAt(r, c);
+        out.push({ row: r, col: c, sq, sponsor });
       }
     }
-    return order;
-  }, [squares]);
-
-  const squaresByZone = useMemo(() => {
-    const m = new Map<string, PitchSquare[]>();
-    for (const s of squares) {
-      const arr = m.get(s.zone) ?? [];
-      arr.push(s);
-      m.set(s.zone, arr);
-    }
-    for (const arr of m.values()) {
-      arr.sort((a, b) => a.row - b.row || a.col - b.col);
-    }
-    return m;
-  }, [squares]);
+    return out;
+  }, [byRowCol]);
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-10 items-start">
       {/* Pitch */}
       <div>
-        <div className="rounded-sm bg-green/95 p-4 sm:p-5 relative">
-          {/* pitch markings (decorative) */}
-          <div className="absolute inset-4 sm:inset-5 border border-paper/30 rounded-sm pointer-events-none" />
-          <div className="absolute left-1/2 top-4 bottom-4 sm:top-5 sm:bottom-5 w-px bg-paper/30 pointer-events-none" />
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-20 sm:h-28 sm:w-28 rounded-full border border-paper/30 pointer-events-none" />
+        <div
+          className="relative w-full"
+          style={{ aspectRatio: `${COLS}/${ROWS}` }}
+        >
+          {/* SVG pitch markings layer */}
+          <svg
+            viewBox={`0 0 ${VW} ${VH}`}
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            preserveAspectRatio="none"
+          >
+            {/* Grass stripes */}
+            {Array.from({ length: COLS }, (_, i) => (
+              <rect
+                key={i}
+                x={i * CW}
+                y={0}
+                width={CW}
+                height={VH}
+                fill={i % 2 === 0 ? "#1a5c2a" : "#1e6830"}
+              />
+            ))}
 
-          {zones.map((zone, zi) => {
-            const isLast = zi === zones.length - 1;
-            const label = (
-              <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.22em] text-paper/70">
-                <span>{zone}</span>
-                <span className="flex-1 h-px bg-paper/30" />
-              </div>
-            );
-            return (
-              <div key={zone} className={zi > 0 ? "mt-3" : ""}>
-                {!isLast && <div className="mb-2">{label}</div>}
-                <div
-                  className="grid gap-[3px] sm:gap-[4px]"
-                  style={{
-                    gridTemplateColumns: `repeat(${config.cols}, minmax(0, 1fr))`,
-                  }}
-                >
-                  {(squaresByZone.get(zone) ?? []).map((s) => (
-                    <Cell
-                      key={s.id}
-                      square={s}
-                      selected={selected.has(s.id)}
-                      onToggle={() => toggle(s)}
-                    />
-                  ))}
-                </div>
-                {isLast && <div className="mt-2">{label}</div>}
-              </div>
-            );
-          })}
+            {/* Touch lines */}
+            <rect
+              x={LINE_W / 2}
+              y={LINE_W / 2}
+              width={VW - LINE_W}
+              height={VH - LINE_W}
+              fill="none"
+              stroke={LINE}
+              strokeWidth={LINE_W}
+            />
+
+            {/* Halfway line */}
+            <line
+              x1={M.centreX}
+              y1={0}
+              x2={M.centreX}
+              y2={VH}
+              stroke={LINE}
+              strokeWidth={LINE_W}
+            />
+
+            {/* Centre circle */}
+            <circle
+              cx={M.centreX}
+              cy={M.centreY}
+              r={M.centreR}
+              fill="none"
+              stroke={LINE}
+              strokeWidth={LINE_W}
+            />
+            <circle cx={M.centreX} cy={M.centreY} r={0.6} fill={LINE} />
+
+            {/* Left penalty area */}
+            <rect
+              x={0}
+              y={(VH - M.penAreaW) / 2}
+              width={M.penAreaH}
+              height={M.penAreaW}
+              fill="none"
+              stroke={LINE}
+              strokeWidth={LINE_W}
+            />
+            {/* Left 6-yard box */}
+            <rect
+              x={0}
+              y={(VH - M.sixYardW) / 2}
+              width={M.sixYardH}
+              height={M.sixYardW}
+              fill="none"
+              stroke={LINE}
+              strokeWidth={LINE_W}
+            />
+            {/* Left penalty spot */}
+            <circle cx={M.penSpotY} cy={M.centreY} r={0.6} fill={LINE} />
+            {/* Left penalty arc */}
+            <path
+              d={penaltyArc(M.penSpotY, M.centreY, M.penArcR, M.penAreaH, "right")}
+              fill="none"
+              stroke={LINE}
+              strokeWidth={LINE_W}
+            />
+
+            {/* Right penalty area */}
+            <rect
+              x={VW - M.penAreaH}
+              y={(VH - M.penAreaW) / 2}
+              width={M.penAreaH}
+              height={M.penAreaW}
+              fill="none"
+              stroke={LINE}
+              strokeWidth={LINE_W}
+            />
+            {/* Right 6-yard box */}
+            <rect
+              x={VW - M.sixYardH}
+              y={(VH - M.sixYardW) / 2}
+              width={M.sixYardH}
+              height={M.sixYardW}
+              fill="none"
+              stroke={LINE}
+              strokeWidth={LINE_W}
+            />
+            {/* Right penalty spot */}
+            <circle cx={VW - M.penSpotY} cy={M.centreY} r={0.6} fill={LINE} />
+            {/* Right penalty arc */}
+            <path
+              d={penaltyArc(VW - M.penSpotY, M.centreY, M.penArcR, VW - M.penAreaH, "left")}
+              fill="none"
+              stroke={LINE}
+              strokeWidth={LINE_W}
+            />
+
+            {/* Goals */}
+            <rect
+              x={-M.goalH}
+              y={(VH - M.goalW) / 2}
+              width={M.goalH}
+              height={M.goalW}
+              fill="none"
+              stroke={LINE}
+              strokeWidth={LINE_W}
+            />
+            <rect
+              x={VW}
+              y={(VH - M.goalW) / 2}
+              width={M.goalH}
+              height={M.goalW}
+              fill="none"
+              stroke={LINE}
+              strokeWidth={LINE_W}
+            />
+
+            {/* Corner arcs */}
+            <path d={`M 0 ${M.cornerR} A ${M.cornerR} ${M.cornerR} 0 0 0 ${M.cornerR} 0`} fill="none" stroke={LINE} strokeWidth={LINE_W} />
+            <path d={`M ${VW - M.cornerR} 0 A ${M.cornerR} ${M.cornerR} 0 0 0 ${VW} ${M.cornerR}`} fill="none" stroke={LINE} strokeWidth={LINE_W} />
+            <path d={`M 0 ${VH - M.cornerR} A ${M.cornerR} ${M.cornerR} 0 0 1 ${M.cornerR} ${VH}`} fill="none" stroke={LINE} strokeWidth={LINE_W} />
+            <path d={`M ${VW - M.cornerR} ${VH} A ${M.cornerR} ${M.cornerR} 0 0 1 ${VW} ${VH - M.cornerR}`} fill="none" stroke={LINE} strokeWidth={LINE_W} />
+          </svg>
+
+          {/* Grid overlay */}
+          <div
+            className="absolute inset-0 grid"
+            style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)`, gridTemplateRows: `repeat(${ROWS}, 1fr)` }}
+          >
+            {cells.map(({ row, col, sq, sponsor }) => (
+              <GridCell
+                key={`${row}-${col}`}
+                row={row}
+                col={col}
+                square={sq}
+                sponsor={sponsor}
+                selected={sq ? selected.has(sq.id) : false}
+                onToggle={sq ? () => toggle(sq) : undefined}
+                onSponsorHover={(s, e) => {
+                  setHoverSponsor(s);
+                  if (e) {
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    setHoverPos({ x: rect.left + rect.width / 2, y: rect.top });
+                  }
+                }}
+                onSponsorLeave={() => { setHoverSponsor(null); setHoverPos(null); }}
+              />
+            ))}
+          </div>
         </div>
 
         <Legend />
       </div>
+
+      {/* Sponsor tooltip (portal-style, fixed) */}
+      {hoverSponsor && hoverPos && (
+        <SponsorTooltip sponsor={hoverSponsor} pos={hoverPos} />
+      )}
 
       {/* Side panel */}
       <aside className="bg-paper border border-line p-6 lg:sticky lg:top-6">
@@ -155,9 +320,7 @@ export function PitchGrid({
               .sort((a, b) => a.row - b.row || a.col - b.col)
               .map((s) => (
                 <div key={s.id} className="flex justify-between gap-3">
-                  <span>
-                    {s.zone} · R{s.row} · C{s.col}
-                  </span>
+                  <span>R{s.row} · C{s.col}</span>
                   <button
                     type="button"
                     onClick={() => toggle(s)}
@@ -173,7 +336,7 @@ export function PitchGrid({
 
         {selected.size === 0 ? (
           <p className="mt-6 text-sm text-mute leading-relaxed">
-            Click any white square on the pitch to add it to your selection.
+            Click any available square on the pitch to add it to your selection.
             Pick as many as you like — each is £
             {(config.pricePence / 100).toFixed(0)}.
           </p>
@@ -251,56 +414,207 @@ export function PitchGrid({
   );
 }
 
-function Cell({
+const TIER_STYLES: Record<SponsorTier, { bg: string; border: string; text: string }> = {
+  platinum: { bg: "rgba(212,175,55,0.82)", border: "rgba(255,215,80,0.9)", text: "#1a1a1a" },
+  gold:     { bg: "rgba(200,160,40,0.75)", border: "rgba(240,190,60,0.85)", text: "#1a1a1a" },
+  silver:   { bg: "rgba(160,170,180,0.75)", border: "rgba(190,200,210,0.85)", text: "#1a1a1a" },
+};
+
+function GridCell({
+  row,
+  col,
   square,
+  sponsor,
   selected,
   onToggle,
+  onSponsorHover,
+  onSponsorLeave,
 }: {
-  square: PitchSquare;
+  row: number;
+  col: number;
+  square: PitchSquare | null;
+  sponsor: PitchSponsor | undefined;
   selected: boolean;
-  onToggle: () => void;
+  onToggle?: () => void;
+  onSponsorHover: (s: PitchSponsor, e: React.MouseEvent | null) => void;
+  onSponsorLeave: () => void;
 }) {
-  const base =
-    "relative aspect-square text-[8px] sm:text-[9px] uppercase tracking-tight flex items-center justify-center transition-colors";
+  // Commercial sponsor square
+  if (sponsor) {
+    const ts = TIER_STYLES[sponsor.tier];
+    return (
+      <div
+        className="relative cursor-pointer group"
+        style={{
+          background: ts.bg,
+          outline: `1px solid ${ts.border}`,
+          outlineOffset: "-1px",
+        }}
+        onMouseEnter={(e) => onSponsorHover(sponsor, e)}
+        onMouseLeave={onSponsorLeave}
+        onClick={() => sponsor.website && window.open(sponsor.website, "_blank", "noopener")}
+        title={sponsor.name}
+      >
+        <TierBadge tier={sponsor.tier} row={row} col={col} sponsor={sponsor} />
+      </div>
+    );
+  }
+
+  const base = "relative transition-colors";
+
+  if (!square) {
+    return <div className={`${base} border border-white/5`} />;
+  }
+
   if (square.status === "sold") {
     return (
       <div
-        className={`${base} bg-sky text-navy cursor-help group`}
+        className={`${base} bg-sky/70 border border-sky/40 cursor-help group flex items-center justify-center`}
         title={square.sponsorName ?? "Sold"}
       >
         {square.sponsorName && (
-          <span className="absolute inset-0 hidden lg:flex items-center justify-center overflow-hidden">
-            <span className="px-0.5 leading-[0.95] text-center font-semibold truncate w-full">
-              {initials(square.sponsorName)}
-            </span>
+          <span className="text-[6px] sm:text-[7px] text-navy font-bold leading-none text-center px-0.5 truncate w-full text-center">
+            {initials(square.sponsorName)}
           </span>
         )}
       </div>
     );
   }
+
   if (square.status === "pending") {
     return (
       <div
-        className={`${base} bg-cream/80 text-mute cursor-not-allowed`}
+        className={`${base} bg-white/10 border border-white/10 cursor-not-allowed`}
         title="Reserved"
       />
     );
   }
+
+  // Available
   return (
     <button
       type="button"
       onClick={onToggle}
-      aria-label={`Sponsor square ${square.zone} row ${square.row} column ${square.col}`}
+      aria-label={`Sponsor square row ${square.row} column ${square.col}`}
       className={[
         base,
+        "border",
         selected
-          ? "bg-paper text-navy ring-2 ring-inset ring-sky"
-          : "bg-paper/[0.06] text-paper/0 hover:bg-paper/15 hover:text-paper/40 cursor-pointer",
+          ? "bg-paper border-sky ring-1 ring-inset ring-sky"
+          : "bg-white/[0.04] border-white/8 hover:bg-white/[0.14] hover:border-white/25 cursor-pointer",
       ].join(" ")}
     >
-      {selected ? "✓" : ""}
+      {selected && (
+        <span className="absolute inset-0 flex items-center justify-center text-navy text-[8px] sm:text-[10px] font-bold">
+          ✓
+        </span>
+      )}
     </button>
   );
+}
+
+function TierBadge({
+  tier,
+  row,
+  col,
+  sponsor,
+}: {
+  tier: SponsorTier;
+  row: number;
+  col: number;
+  sponsor: PitchSponsor;
+}) {
+  // Only show label on the top-left square of a multi-square sponsor
+  const isOrigin = sponsor.squares[0]?.row === row && sponsor.squares[0]?.col === col;
+  if (!isOrigin) return null;
+
+  const spanCols = Math.max(...sponsor.squares.map((s) => s.col)) - Math.min(...sponsor.squares.map((s) => s.col)) + 1;
+  const spanRows = Math.max(...sponsor.squares.map((s) => s.row)) - Math.min(...sponsor.squares.map((s) => s.row)) + 1;
+
+  return (
+    <div
+      className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none overflow-hidden px-1"
+      style={{
+        width: `${spanCols * 100}%`,
+        height: `${spanRows * 100}%`,
+      }}
+    >
+      <span
+        className="font-semibold text-center leading-tight"
+        style={{
+          fontSize: tier === "platinum" ? "clamp(5px, 1.1vw, 11px)" : "clamp(4px, 0.9vw, 9px)",
+          color: TIER_STYLES[tier].text,
+          textShadow: "none",
+        }}
+      >
+        {sponsor.name}
+      </span>
+      <span
+        className="uppercase tracking-widest mt-0.5"
+        style={{
+          fontSize: "clamp(4px, 0.6vw, 7px)",
+          color: tier === "platinum" ? "rgba(100,70,0,0.8)" : "rgba(60,60,60,0.7)",
+        }}
+      >
+        {tier}
+      </span>
+    </div>
+  );
+}
+
+function SponsorTooltip({
+  sponsor,
+  pos,
+}: {
+  sponsor: PitchSponsor;
+  pos: { x: number; y: number };
+}) {
+  const ts = TIER_STYLES[sponsor.tier];
+  return (
+    <div
+      className="fixed z-50 pointer-events-none"
+      style={{
+        left: pos.x,
+        top: pos.y - 8,
+        transform: "translate(-50%, -100%)",
+      }}
+    >
+      <div
+        className="px-3 py-2 rounded shadow-lg text-center min-w-[120px]"
+        style={{ background: ts.bg, border: `1px solid ${ts.border}`, color: ts.text }}
+      >
+        <div className="font-semibold text-sm leading-tight">{sponsor.name}</div>
+        <div className="text-[10px] uppercase tracking-widest mt-0.5 opacity-70">{sponsor.tier} sponsor</div>
+        {sponsor.website && (
+          <div className="text-[10px] mt-1 opacity-60">Click to visit ↗</div>
+        )}
+        <div
+          className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0"
+          style={{
+            borderLeft: "5px solid transparent",
+            borderRight: "5px solid transparent",
+            borderTop: `5px solid ${ts.border}`,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function penaltyArc(
+  spotX: number,
+  spotY: number,
+  r: number,
+  areaEdgeX: number,
+  side: "left" | "right",
+): string {
+  const angle = Math.acos((areaEdgeX - spotX) / r);
+  const sign = side === "right" ? 1 : -1;
+  const y1 = spotY - Math.sin(angle) * r;
+  const y2 = spotY + Math.sin(angle) * r;
+  const x1 = areaEdgeX;
+  const x2 = areaEdgeX;
+  return `M ${x1} ${y1} A ${r} ${r} 0 0 ${side === "right" ? 1 : 0} ${x2} ${y2}`;
 }
 
 function initials(name: string): string {
@@ -312,16 +626,19 @@ function Legend() {
   return (
     <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[10px] uppercase tracking-[0.22em] text-mute">
       <span className="flex items-center gap-2">
-        <span className="h-3 w-3 bg-sky" /> Sold
+        <span className="h-3 w-3 bg-sky/70" /> Sold
       </span>
       <span className="flex items-center gap-2">
-        <span className="h-3 w-3 bg-cream/80" /> Reserved
+        <span className="h-3 w-3 bg-white/10" /> Reserved
       </span>
       <span className="flex items-center gap-2">
-        <span className="h-3 w-3 bg-paper border border-line" /> Selected
+        <span className="h-3 w-3 bg-paper border border-sky" /> Selected
       </span>
       <span className="flex items-center gap-2">
-        <span className="h-3 w-3 bg-green/95" /> Available
+        <span className="h-3 w-3 bg-white/5 border border-white/20" /> Available
+      </span>
+      <span className="flex items-center gap-2">
+        <span className="h-3 w-3" style={{ background: "rgba(212,175,55,0.82)" }} /> Sponsor
       </span>
     </div>
   );
