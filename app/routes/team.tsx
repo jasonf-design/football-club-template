@@ -1,4 +1,5 @@
 import { asc, eq, inArray } from "drizzle-orm";
+import { Link } from "react-router";
 import type { Route } from "./+types/team";
 import { db } from "~/db.server";
 import { media, players } from "../../db/schema";
@@ -31,7 +32,6 @@ export async function loader() {
       sponsor2Name: players.sponsor2Name,
       sponsor2Url: players.sponsor2Url,
       sponsor2LogoMediaId: players.sponsor2LogoMediaId,
-      sponsorshipUrl: players.sponsorshipUrl,
     })
     .from(players)
     .leftJoin(media, eq(media.id, players.photoMediaId))
@@ -133,13 +133,13 @@ function PlayerCard({ player: p }: { player: SquadPlayer }) {
             name={p.sponsor1Name}
             url={p.sponsor1Url}
             logoFilename={p.sponsor1LogoFilename}
-            sponsorshipUrl={p.sponsorshipUrl}
+            sponsorRoute={`/sponsor/${p.id}`}
           />
           <SponsorSlot
             name={p.sponsor2Name}
             url={p.sponsor2Url}
             logoFilename={p.sponsor2LogoFilename}
-            sponsorshipUrl={p.sponsorshipUrl}
+            sponsorRoute={`/sponsor/${p.id}`}
           />
         </div>
       </div>
@@ -156,28 +156,27 @@ function SponsorSlot({
   name,
   url,
   logoFilename,
-  sponsorshipUrl,
+  sponsorRoute,
 }: {
   name: string | null;
   url: string | null;
   logoFilename: string | null;
-  sponsorshipUrl: string | null;
+  sponsorRoute: string;
 }) {
   url = ensureAbsolute(url);
-  sponsorshipUrl = ensureAbsolute(sponsorshipUrl);
   if (!name) {
-    const badge = (
-      <div className="flex items-center gap-1.5 border border-dashed border-line px-2 py-1">
-        <span className="text-[9px] uppercase tracking-[0.18em] text-mute/60 font-medium">
-          Available to sponsor
-        </span>
-      </div>
+    return (
+      <Link
+        to={sponsorRoute}
+        className="block hover:opacity-80 transition-opacity"
+      >
+        <div className="flex items-center gap-1.5 border border-dashed border-line px-2 py-1">
+          <span className="text-[9px] uppercase tracking-[0.18em] text-mute/60 font-medium">
+            Available to sponsor
+          </span>
+        </div>
+      </Link>
     );
-    return sponsorshipUrl ? (
-      <a href={sponsorshipUrl} target="_blank" rel="noreferrer" className="block hover:opacity-80 transition-opacity">
-        {badge}
-      </a>
-    ) : badge;
   }
 
   const inner = (

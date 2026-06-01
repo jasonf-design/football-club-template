@@ -120,10 +120,6 @@ export function PlayerForm({
             <div className="text-[10px] uppercase tracking-[0.28em] text-mute mb-1">Player sponsorship</div>
             <p className="text-xs text-mute/70">Up to two sponsors per player. Leave blank to show "Available to sponsor".</p>
           </div>
-          <Field name="sponsorshipUrl" label="Payment link" hint="Link shown on 'Available to sponsor' badge (e.g. PayPal or Stripe URL)">
-            <TextInput name="sponsorshipUrl" defaultValue={initial.sponsorshipUrl ?? ""} placeholder="https://paypal.me/…" />
-          </Field>
-          <div className="border-t border-line" />
           <SponsorSlot
             slot={1}
             initial={{ name: initial.sponsor1Name, url: initial.sponsor1Url, logoMediaId: initial.sponsor1LogoMediaId, logoUrl: initial.sponsor1LogoUrl }}

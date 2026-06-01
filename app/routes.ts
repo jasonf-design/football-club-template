@@ -21,6 +21,8 @@ export default [
     route("pitch", "routes/pitch.tsx"),
     route("pitch/success", "routes/pitch-success.tsx"),
     route("pitch/cancel", "routes/pitch-cancel.tsx"),
+    route("sponsor/success", "routes/sponsor-player-success.tsx"),
+    route("sponsor/:id", "routes/sponsor-player.tsx"),
     route("shop", "routes/shop.tsx"),
     route("shop/success", "routes/shop-success.tsx"),
     route("shop/:slug", "routes/shop-product.tsx"),
