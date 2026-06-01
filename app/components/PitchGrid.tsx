@@ -136,77 +136,66 @@ export function PitchGrid({
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-10 items-start">
       {/* Pitch */}
       <div>
-        <div className="relative w-full" style={{ aspectRatio: `${COLS}/${ROWS}` }}>
-          {/* SVG pitch markings */}
-          <svg
-            viewBox={`0 0 ${VW} ${VH}`}
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            preserveAspectRatio="none"
-          >
-            {/* Alternating grass stripes */}
-            {Array.from({ length: COLS }, (_, i) => (
-              <rect key={i} x={i * CW} y={0} width={CW} height={VH}
-                fill={i % 2 === 0 ? "#1a5c2a" : "#1e6830"} />
-            ))}
-            {/* Touchlines */}
-            <rect x={LW / 2} y={LW / 2} width={VW - LW} height={VH - LW}
-              fill="none" stroke={LINE} strokeWidth={LW} />
-            {/* Halfway line */}
-            <line x1={M.centreX} y1={0} x2={M.centreX} y2={VH} stroke={LINE} strokeWidth={LW} />
-            {/* Centre circle + spot */}
-            <circle cx={M.centreX} cy={M.centreY} r={M.centreR} fill="none" stroke={LINE} strokeWidth={LW} />
-            <circle cx={M.centreX} cy={M.centreY} r={0.6} fill={LINE} />
-            {/* Left penalty area */}
-            <rect x={0} y={(VH - M.penAreaW) / 2} width={M.penAreaH} height={M.penAreaW}
-              fill="none" stroke={LINE} strokeWidth={LW} />
-            {/* Left 6-yard box */}
-            <rect x={0} y={(VH - M.sixYardW) / 2} width={M.sixYardH} height={M.sixYardW}
-              fill="none" stroke={LINE} strokeWidth={LW} />
-            {/* Left penalty spot */}
-            <circle cx={M.penSpotY} cy={M.centreY} r={0.6} fill={LINE} />
-            {/* Left penalty arc */}
-            <path d={penaltyArc(M.penSpotY, M.centreY, M.penArcR, M.penAreaH, "right")}
-              fill="none" stroke={LINE} strokeWidth={LW} />
-            {/* Right penalty area */}
-            <rect x={VW - M.penAreaH} y={(VH - M.penAreaW) / 2} width={M.penAreaH} height={M.penAreaW}
-              fill="none" stroke={LINE} strokeWidth={LW} />
-            {/* Right 6-yard box */}
-            <rect x={VW - M.sixYardH} y={(VH - M.sixYardW) / 2} width={M.sixYardH} height={M.sixYardW}
-              fill="none" stroke={LINE} strokeWidth={LW} />
-            {/* Right penalty spot */}
-            <circle cx={VW - M.penSpotY} cy={M.centreY} r={0.6} fill={LINE} />
-            {/* Right penalty arc */}
-            <path d={penaltyArc(VW - M.penSpotY, M.centreY, M.penArcR, VW - M.penAreaH, "left")}
-              fill="none" stroke={LINE} strokeWidth={LW} />
-            {/* Goals */}
-            <rect x={-M.goalH} y={(VH - M.goalW) / 2} width={M.goalH} height={M.goalW}
-              fill="none" stroke={LINE} strokeWidth={LW} />
-            <rect x={VW} y={(VH - M.goalW) / 2} width={M.goalH} height={M.goalW}
-              fill="none" stroke={LINE} strokeWidth={LW} />
-            {/* Corner arcs */}
-            <path d={`M 0 ${M.cornerR} A ${M.cornerR} ${M.cornerR} 0 0 0 ${M.cornerR} 0`} fill="none" stroke={LINE} strokeWidth={LW} />
-            <path d={`M ${VW - M.cornerR} 0 A ${M.cornerR} ${M.cornerR} 0 0 0 ${VW} ${M.cornerR}`} fill="none" stroke={LINE} strokeWidth={LW} />
-            <path d={`M 0 ${VH - M.cornerR} A ${M.cornerR} ${M.cornerR} 0 0 1 ${M.cornerR} ${VH}`} fill="none" stroke={LINE} strokeWidth={LW} />
-            <path d={`M ${VW - M.cornerR} ${VH} A ${M.cornerR} ${M.cornerR} 0 0 1 ${VW} ${VH - M.cornerR}`} fill="none" stroke={LINE} strokeWidth={LW} />
-          </svg>
+        {/* padding-top enforces 15:10 aspect ratio reliably across all browsers */}
+        <div className="relative w-full overflow-hidden" style={{ paddingTop: `${(ROWS / COLS) * 100}%` }}>
+          <div className="absolute inset-0">
+            {/* SVG pitch markings */}
+            <svg
+              viewBox={`0 0 ${VW} ${VH}`}
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              preserveAspectRatio="none"
+            >
+              {Array.from({ length: COLS }, (_, i) => (
+                <rect key={i} x={i * CW} y={0} width={CW} height={VH}
+                  fill={i % 2 === 0 ? "#1a5c2a" : "#1e6830"} />
+              ))}
+              <rect x={LW / 2} y={LW / 2} width={VW - LW} height={VH - LW}
+                fill="none" stroke={LINE} strokeWidth={LW} />
+              <line x1={M.centreX} y1={0} x2={M.centreX} y2={VH} stroke={LINE} strokeWidth={LW} />
+              <circle cx={M.centreX} cy={M.centreY} r={M.centreR} fill="none" stroke={LINE} strokeWidth={LW} />
+              <circle cx={M.centreX} cy={M.centreY} r={0.6} fill={LINE} />
+              <rect x={0} y={(VH - M.penAreaW) / 2} width={M.penAreaH} height={M.penAreaW}
+                fill="none" stroke={LINE} strokeWidth={LW} />
+              <rect x={0} y={(VH - M.sixYardW) / 2} width={M.sixYardH} height={M.sixYardW}
+                fill="none" stroke={LINE} strokeWidth={LW} />
+              <circle cx={M.penSpotY} cy={M.centreY} r={0.6} fill={LINE} />
+              <path d={penaltyArc(M.penSpotY, M.centreY, M.penArcR, M.penAreaH, "right")}
+                fill="none" stroke={LINE} strokeWidth={LW} />
+              <rect x={VW - M.penAreaH} y={(VH - M.penAreaW) / 2} width={M.penAreaH} height={M.penAreaW}
+                fill="none" stroke={LINE} strokeWidth={LW} />
+              <rect x={VW - M.sixYardH} y={(VH - M.sixYardW) / 2} width={M.sixYardH} height={M.sixYardW}
+                fill="none" stroke={LINE} strokeWidth={LW} />
+              <circle cx={VW - M.penSpotY} cy={M.centreY} r={0.6} fill={LINE} />
+              <path d={penaltyArc(VW - M.penSpotY, M.centreY, M.penArcR, VW - M.penAreaH, "left")}
+                fill="none" stroke={LINE} strokeWidth={LW} />
+              <rect x={-M.goalH} y={(VH - M.goalW) / 2} width={M.goalH} height={M.goalW}
+                fill="none" stroke={LINE} strokeWidth={LW} />
+              <rect x={VW} y={(VH - M.goalW) / 2} width={M.goalH} height={M.goalW}
+                fill="none" stroke={LINE} strokeWidth={LW} />
+              <path d={`M 0 ${M.cornerR} A ${M.cornerR} ${M.cornerR} 0 0 0 ${M.cornerR} 0`} fill="none" stroke={LINE} strokeWidth={LW} />
+              <path d={`M ${VW - M.cornerR} 0 A ${M.cornerR} ${M.cornerR} 0 0 0 ${VW} ${M.cornerR}`} fill="none" stroke={LINE} strokeWidth={LW} />
+              <path d={`M 0 ${VH - M.cornerR} A ${M.cornerR} ${M.cornerR} 0 0 1 ${M.cornerR} ${VH}`} fill="none" stroke={LINE} strokeWidth={LW} />
+              <path d={`M ${VW - M.cornerR} ${VH} A ${M.cornerR} ${M.cornerR} 0 0 1 ${VW} ${VH - M.cornerR}`} fill="none" stroke={LINE} strokeWidth={LW} />
+            </svg>
 
-          {/* Grid overlay */}
-          <div
-            className="absolute inset-0 grid"
-            style={{
-              gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-              gridTemplateRows: `repeat(${ROWS}, 1fr)`,
-            }}
-          >
-            {gridItems.map(({ row, col, sq, origin, isSkipped }) =>
-              isSkipped ? (
-                // Empty placeholder — visually covered by the sponsor block above it
-                <div key={`${row}-${col}`} style={{ gridColumn: String(col), gridRow: String(row) }} />
-              ) : (
+            {/* Cells: absolute % positioning — no CSS Grid, no layout ambiguity */}
+            {gridItems.map(({ row, col, sq, origin, isSkipped }) => {
+              if (isSkipped) return null;
+              const colSpan = origin?.colSpan ?? 1;
+              const rowSpan = origin?.rowSpan ?? 1;
+              const pct = {
+                position: "absolute" as const,
+                left: `${((col - 1) / COLS) * 100}%`,
+                top: `${((row - 1) / ROWS) * 100}%`,
+                width: `${(colSpan / COLS) * 100}%`,
+                height: `${(rowSpan / ROWS) * 100}%`,
+              };
+              return (
                 <GridCell
                   key={`${row}-${col}`}
                   row={row}
                   col={col}
+                  pct={pct}
                   square={sq}
                   origin={origin}
                   selected={sq ? selected.has(sq.id) : false}
@@ -217,8 +206,8 @@ export function PitchGrid({
                   }}
                   onSponsorLeave={() => setTooltip(null)}
                 />
-              )
-            )}
+              );
+            })}
           </div>
         </div>
 
@@ -338,6 +327,7 @@ const TIER_STYLE: Record<SponsorTier, { bg: string; ring: string; nameColor: str
 function GridCell({
   row,
   col,
+  pct,
   square,
   origin,
   selected,
@@ -347,6 +337,7 @@ function GridCell({
 }: {
   row: number;
   col: number;
+  pct: React.CSSProperties;
   square: PitchSquare | null;
   origin: { sponsor: PitchSponsor; colSpan: number; rowSpan: number } | null;
   selected: boolean;
@@ -354,16 +345,15 @@ function GridCell({
   onSponsorEnter: (s: PitchSponsor, e: React.MouseEvent) => void;
   onSponsorLeave: () => void;
 }) {
-  // Sponsor block — spans multiple grid cells
+  // Sponsor block
   if (origin) {
-    const { sponsor, colSpan, rowSpan } = origin;
+    const { sponsor } = origin;
     const ts = TIER_STYLE[sponsor.tier];
     return (
       <div
-        className="relative flex flex-col items-center justify-center cursor-pointer select-none group"
+        className="flex flex-col items-center justify-center cursor-pointer select-none group overflow-hidden"
         style={{
-          gridColumn: `${col} / span ${colSpan}`,
-          gridRow: `${row} / span ${rowSpan}`,
+          ...pct,
           background: ts.bg,
           boxShadow: `inset 0 0 0 1px ${ts.ring}`,
           zIndex: 2,
@@ -398,19 +388,17 @@ function GridCell({
     );
   }
 
-  // Explicit placement for every non-sponsor cell — prevents CSS auto-placement drift
-  const placement = { gridColumn: String(col), gridRow: String(row) };
-  const base = "relative transition-colors";
+  const base = "transition-colors overflow-hidden";
 
   if (!square) {
-    return <div className={base} style={{ ...placement, borderRight: "1px solid rgba(255,255,255,0.04)" }} />;
+    return <div className={base} style={{ ...pct, borderRight: "1px solid rgba(255,255,255,0.04)" }} />;
   }
 
   if (square.status === "sold") {
     return (
       <div
         className={`${base} bg-sky/65 flex items-center justify-center cursor-help`}
-        style={{ ...placement, boxShadow: "inset 0 0 0 1px rgba(100,200,255,0.3)" }}
+        style={{ ...pct, boxShadow: "inset 0 0 0 1px rgba(100,200,255,0.3)" }}
         title={square.sponsorName ?? "Sold"}
       >
         {square.sponsorName && (
@@ -425,7 +413,7 @@ function GridCell({
   if (square.status === "pending") {
     return (
       <div className={`${base} bg-white/8 cursor-not-allowed`}
-        style={{ ...placement, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" }}
+        style={{ ...pct, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" }}
         title="Reserved" />
     );
   }
@@ -442,7 +430,7 @@ function GridCell({
           : "bg-white/[0.04] hover:bg-white/[0.14] cursor-pointer",
       ].join(" ")}
       style={{
-        ...placement,
+        ...pct,
         boxShadow: selected
           ? "inset 0 0 0 2px #7dd3fc"
           : "inset 0 0 0 1px rgba(255,255,255,0.06)",
