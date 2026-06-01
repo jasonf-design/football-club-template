@@ -59,7 +59,7 @@ export default function Partnership() {
       ref={iframeRef}
       src="/partnership-brochure.html"
       title="Doncaster City FC 2026/27 Partnership Brochure"
-      style={{ width: "100%", minHeight: "100vh", border: "none", display: "block" }}
+      style={{ width: "100%", minHeight: "100vh", border: "none", display: "block", overflow: "hidden" }}
     />
   );
 }
