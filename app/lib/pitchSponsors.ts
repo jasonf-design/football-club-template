@@ -16,7 +16,7 @@ export const pitchSponsors: PitchSponsor[] = [
     id: "smiles-thai-massage",
     name: "Smiles Thai Massage",
     tier: "platinum",
-    website: "https://www.smilesthaimassage.com",
+    website: "https://www.smilethaimassage.com",
     squares: [
       { row: 5, col: 7 },
       { row: 5, col: 8 },
