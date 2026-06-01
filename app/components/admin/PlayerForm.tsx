@@ -20,6 +20,7 @@ export type PlayerFormData = {
   sponsor2Url?: string | null;
   sponsor2LogoMediaId?: string | null;
   sponsor2LogoUrl?: string | null;
+  sponsorshipUrl?: string | null;
 };
 
 const POSITIONS = [
@@ -116,9 +117,13 @@ export function PlayerForm({
         {/* Shirt sponsorship */}
         <div className="bg-paper border border-line p-6 lg:p-8 space-y-6">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.28em] text-mute mb-1">Shirt sponsorship</div>
+            <div className="text-[10px] uppercase tracking-[0.28em] text-mute mb-1">Player sponsorship</div>
             <p className="text-xs text-mute/70">Up to two sponsors per player. Leave blank to show "Available to sponsor".</p>
           </div>
+          <Field name="sponsorshipUrl" label="Payment link" hint="Link shown on 'Available to sponsor' badge (e.g. PayPal or Stripe URL)">
+            <TextInput name="sponsorshipUrl" defaultValue={initial.sponsorshipUrl ?? ""} placeholder="https://paypal.me/…" />
+          </Field>
+          <div className="border-t border-line" />
           <SponsorSlot
             slot={1}
             initial={{ name: initial.sponsor1Name, url: initial.sponsor1Url, logoMediaId: initial.sponsor1LogoMediaId, logoUrl: initial.sponsor1LogoUrl }}

@@ -30,6 +30,7 @@ const schema = z.object({
   sponsor2Name: z.string().max(120).optional(),
   sponsor2Url: z.string().max(500).optional(),
   sponsor2LogoMediaId: z.string().max(64).optional(),
+  sponsorshipUrl: z.string().max(500).optional(),
 });
 
 export async function action({ request }: Route.ActionArgs) {
@@ -49,6 +50,7 @@ export async function action({ request }: Route.ActionArgs) {
     sponsor2Name: form.get("sponsor2Name") || undefined,
     sponsor2Url: form.get("sponsor2Url") || undefined,
     sponsor2LogoMediaId: form.get("sponsor2LogoMediaId") || undefined,
+    sponsorshipUrl: form.get("sponsorshipUrl") || undefined,
   });
   if (!parsed.success) {
     const errors: Record<string, string> = {};
@@ -72,6 +74,7 @@ export async function action({ request }: Route.ActionArgs) {
     sponsor2Name: parsed.data.sponsor2Name ?? null,
     sponsor2Url: parsed.data.sponsor2Url ?? null,
     sponsor2LogoMediaId: parsed.data.sponsor2LogoMediaId || null,
+    sponsorshipUrl: parsed.data.sponsorshipUrl ?? null,
   });
   throw redirect("/admin/players");
 }

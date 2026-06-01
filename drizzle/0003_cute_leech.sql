@@ -1,0 +1,1 @@
+ALTER TABLE `players` ADD `sponsorship_url` text;

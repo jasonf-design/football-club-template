@@ -107,6 +107,7 @@ export const players = sqliteTable("players", {
     () => media.id,
     { onDelete: "set null" },
   ),
+  sponsorshipUrl: text("sponsorship_url"),
   sortOrder: integer("sort_order").notNull().default(0),
   active: integer("active", { mode: "boolean" }).notNull().default(true),
   createdAt: createdAt(),

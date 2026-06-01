@@ -31,6 +31,7 @@ export async function loader() {
       sponsor2Name: players.sponsor2Name,
       sponsor2Url: players.sponsor2Url,
       sponsor2LogoMediaId: players.sponsor2LogoMediaId,
+      sponsorshipUrl: players.sponsorshipUrl,
     })
     .from(players)
     .leftJoin(media, eq(media.id, players.photoMediaId))
@@ -132,11 +133,13 @@ function PlayerCard({ player: p }: { player: SquadPlayer }) {
             name={p.sponsor1Name}
             url={p.sponsor1Url}
             logoFilename={p.sponsor1LogoFilename}
+            sponsorshipUrl={p.sponsorshipUrl}
           />
           <SponsorSlot
             name={p.sponsor2Name}
             url={p.sponsor2Url}
             logoFilename={p.sponsor2LogoFilename}
+            sponsorshipUrl={p.sponsorshipUrl}
           />
         </div>
       </div>
@@ -144,23 +147,37 @@ function PlayerCard({ player: p }: { player: SquadPlayer }) {
   );
 }
 
+function ensureAbsolute(url: string | null): string | null {
+  if (!url) return null;
+  return url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
+}
+
 function SponsorSlot({
   name,
   url,
   logoFilename,
+  sponsorshipUrl,
 }: {
   name: string | null;
   url: string | null;
   logoFilename: string | null;
+  sponsorshipUrl: string | null;
 }) {
+  url = ensureAbsolute(url);
+  sponsorshipUrl = ensureAbsolute(sponsorshipUrl);
   if (!name) {
-    return (
+    const badge = (
       <div className="flex items-center gap-1.5 border border-dashed border-line px-2 py-1">
         <span className="text-[9px] uppercase tracking-[0.18em] text-mute/60 font-medium">
           Available to sponsor
         </span>
       </div>
     );
+    return sponsorshipUrl ? (
+      <a href={sponsorshipUrl} target="_blank" rel="noreferrer" className="block hover:opacity-80 transition-opacity">
+        {badge}
+      </a>
+    ) : badge;
   }
 
   const inner = (
@@ -180,11 +197,16 @@ function SponsorSlot({
     </div>
   );
 
-  return url ? (
-    <a href={url} target="_blank" rel="noreferrer" className="block hover:opacity-80 transition-opacity">
-      {inner}
-    </a>
-  ) : (
-    <div>{inner}</div>
+  return (
+    <div>
+      <div className="text-[9px] uppercase tracking-[0.14em] text-mute/60 mb-0.5">Sponsored by</div>
+      {url ? (
+        <a href={url} target="_blank" rel="noreferrer" className="block hover:opacity-80 transition-opacity">
+          {inner}
+        </a>
+      ) : (
+        <div>{inner}</div>
+      )}
+    </div>
   );
 }

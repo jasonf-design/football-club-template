@@ -53,6 +53,7 @@ const schema = z.object({
   sponsor2Name: z.string().max(120).optional(),
   sponsor2Url: z.string().max(500).optional(),
   sponsor2LogoMediaId: z.string().max(64).optional(),
+  sponsorshipUrl: z.string().max(500).optional(),
 });
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -76,6 +77,7 @@ export async function action({ request, params }: Route.ActionArgs) {
     sponsor2Name: form.get("sponsor2Name") || undefined,
     sponsor2Url: form.get("sponsor2Url") || undefined,
     sponsor2LogoMediaId: form.get("sponsor2LogoMediaId") || undefined,
+    sponsorshipUrl: form.get("sponsorshipUrl") || undefined,
   });
   if (!parsed.success) {
     const errors: Record<string, string> = {};
@@ -101,6 +103,7 @@ export async function action({ request, params }: Route.ActionArgs) {
       sponsor2Name: parsed.data.sponsor2Name ?? null,
       sponsor2Url: parsed.data.sponsor2Url ?? null,
       sponsor2LogoMediaId: parsed.data.sponsor2LogoMediaId || null,
+      sponsorshipUrl: parsed.data.sponsorshipUrl ?? null,
     })
     .where(eq(players.id, params.id));
   throw redirect("/admin/players");
@@ -135,6 +138,7 @@ export default function AdminPlayersEdit() {
           sponsor2Url: player.sponsor2Url,
           sponsor2LogoMediaId: player.sponsor2LogoMediaId,
           sponsor2LogoUrl,
+          sponsorshipUrl: player.sponsorshipUrl,
         }}
         errors={result?.errors}
         submitLabel="Save changes"
