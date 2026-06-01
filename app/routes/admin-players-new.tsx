@@ -1,4 +1,4 @@
-import { redirect, useActionData } from "react-router";
+import { redirect, useActionData, useLoaderData } from "react-router";
 import { z } from "zod";
 import type { Route } from "./+types/admin-players-new";
 import { db } from "~/db.server";
@@ -13,7 +13,9 @@ export function meta(_: Route.MetaArgs) {
 
 export async function loader({ request }: Route.LoaderArgs) {
   await requireAdmin(request);
-  return null;
+  const url = new URL(request.url);
+  const team = (url.searchParams.get("team") ?? "first") as "first" | "u21";
+  return { team };
 }
 
 const schema = z.object({
@@ -82,14 +84,21 @@ export async function action({ request }: Route.ActionArgs) {
   throw redirect("/admin/players");
 }
 
+const TEAM_LABEL = { first: "1st Team", u21: "Under 21s" };
+
 export default function AdminPlayersNew() {
+  const { team } = useLoaderData<typeof loader>();
   const data = useActionData<typeof action>();
+  const teamLabel = TEAM_LABEL[team];
   return (
-    <AdminPage eyebrow="Squad" title="Add player">
+    <AdminPage eyebrow="Teams" title={`Add player · ${teamLabel}`}>
       <AdminBreadcrumbs
-        items={[{ label: "Squad", to: "/admin/players" }, { label: "New" }]}
+        items={[
+          { label: teamLabel, to: `/admin/players?team=${team}` },
+          { label: "New" },
+        ]}
       />
-      <PlayerForm errors={data?.errors} submitLabel="Add player" />
+      <PlayerForm initial={{ team }} errors={data?.errors} submitLabel="Add player" />
     </AdminPage>
   );
 }

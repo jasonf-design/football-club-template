@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { Form, Link } from "react-router";
 import type { Route } from "./+types/admin-players";
 import { db } from "~/db.server";
@@ -15,12 +15,19 @@ import {
 } from "~/components/admin/AdminShell";
 import { uploadUrlFor } from "~/lib/uploads";
 
+const TEAM_META = {
+  first: { label: "1st Team", title: "First team", description: "Players shown on the public 1st Team page." },
+  u21: { label: "Under 21s", title: "Under 21s", description: "Players shown on the public Under 21s page." },
+} as const;
+
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Squad · Admin" }];
+  return [{ title: "Teams · Admin" }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
   await requireAdmin(request);
+  const url = new URL(request.url);
+  const team = (url.searchParams.get("team") ?? "first") as "first" | "u21";
   const rows = await db
     .select({
       id: players.id,
@@ -33,8 +40,9 @@ export async function loader({ request }: Route.LoaderArgs) {
     })
     .from(players)
     .leftJoin(media, eq(media.id, players.photoMediaId))
+    .where(and(eq(players.team, team)))
     .orderBy(asc(players.sortOrder), asc(players.name));
-  return { players: rows };
+  return { players: rows, team };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -48,25 +56,31 @@ export async function action({ request }: Route.ActionArgs) {
   return { ok: true };
 }
 
-export default function AdminPlayersList({
-  loaderData,
-}: Route.ComponentProps) {
-  const { players } = loaderData;
+export default function AdminPlayersList({ loaderData }: Route.ComponentProps) {
+  const { players, team } = loaderData;
+  const meta = TEAM_META[team];
+
   return (
     <AdminPage
-      eyebrow="Squad"
-      title="First team"
-      description="The roster shown on the public Team page. Sort order controls how players appear."
-      actions={<LinkButton to="/admin/players/new">+ Add player</LinkButton>}
+      eyebrow="Teams"
+      title={meta.title}
+      description={meta.description}
+      actions={
+        <LinkButton to={`/admin/players/new?team=${team}`}>
+          + Add player
+        </LinkButton>
+      }
     >
       {players.length === 0 ? (
         <div className="bg-paper border border-line p-12 text-center">
           <div className="font-serif text-2xl text-navy">No players yet.</div>
           <p className="mt-2 text-mute text-sm">
-            Add players to fill out the squad page.
+            Add players to fill out the {meta.label} page.
           </p>
           <div className="mt-5">
-            <LinkButton to="/admin/players/new">Add the first player</LinkButton>
+            <LinkButton to={`/admin/players/new?team=${team}`}>
+              Add the first player
+            </LinkButton>
           </div>
         </div>
       ) : (
@@ -86,9 +100,7 @@ export default function AdminPlayersList({
             <tr key={p.id} className="hover:bg-paper-warm/40">
               <Td>
                 {p.shirtNumber != null ? (
-                  <span className="scoreboard text-xl text-navy">
-                    {p.shirtNumber}
-                  </span>
+                  <span className="scoreboard text-xl text-navy">{p.shirtNumber}</span>
                 ) : (
                   <span className="text-mute">—</span>
                 )}
@@ -135,9 +147,7 @@ export default function AdminPlayersList({
                     <DangerButton
                       type="submit"
                       onClick={(e) => {
-                        if (!confirm(`Delete ${p.name}?`)) {
-                          e.preventDefault();
-                        }
+                        if (!confirm(`Delete ${p.name}?`)) e.preventDefault();
                       }}
                     >
                       Delete

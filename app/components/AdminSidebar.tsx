@@ -1,12 +1,14 @@
-import { Form, Link, NavLink } from "react-router";
+import { Form, Link, NavLink, useLocation } from "react-router";
 import { Crest } from "./Crest";
 
 type NavItem = { to: string; label: string; end?: boolean; adminOnly?: boolean };
 
-const NAV: NavItem[] = [
+const NAV_TOP: NavItem[] = [
   { to: "/admin", label: "Dashboard", end: true },
   { to: "/admin/posts", label: "News & posts" },
-  { to: "/admin/players", label: "Squad" },
+];
+
+const NAV_BOTTOM: NavItem[] = [
   { to: "/admin/fixtures", label: "Fixtures" },
   { to: "/admin/sponsors", label: "Sponsors" },
   { to: "/admin/pitch", label: "Pitch sponsorship" },
@@ -18,11 +20,29 @@ const NAV: NavItem[] = [
   { to: "/admin/users", label: "Team access", adminOnly: true },
 ];
 
+const TEAM_LINKS = [
+  { to: "/admin/players?team=first", label: "1st Team", teamParam: "first" },
+  { to: "/admin/players?team=u21", label: "Under 21s", teamParam: "u21" },
+];
+
+function navClass(isActive: boolean) {
+  return [
+    "block px-3 py-2 text-sm rounded transition-colors",
+    isActive
+      ? "bg-sky/20 text-paper border-l-2 border-sky pl-[10px]"
+      : "text-paper/70 hover:text-paper hover:bg-paper/5",
+  ].join(" ");
+}
+
 export function AdminSidebar({
   user,
 }: {
   user: { name: string; email: string; role: string };
 }) {
+  const location = useLocation();
+  const onPlayersPage = location.pathname.startsWith("/admin/players");
+  const currentTeam = new URLSearchParams(location.search).get("team") ?? "first";
+
   return (
     <aside className="w-64 shrink-0 bg-navy text-paper flex flex-col min-h-screen">
       <Link
@@ -39,20 +59,42 @@ export function AdminSidebar({
       </Link>
 
       <nav className="flex-1 py-4 px-2 space-y-0.5">
-        {NAV.filter((item) => !item.adminOnly || user.role === "admin").map(
+        {NAV_TOP.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={({ isActive }) => navClass(isActive)}
+          >
+            {item.label}
+          </NavLink>
+        ))}
+
+        {/* Teams group */}
+        <div className="pt-1 pb-0.5">
+          <div className="px-3 py-1 text-[9px] uppercase tracking-[0.22em] text-paper/40">
+            Teams
+          </div>
+          {TEAM_LINKS.map(({ to, label, teamParam }) => {
+            const isActive = onPlayersPage && currentTeam === teamParam;
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={navClass(isActive) + " pl-6" + (isActive ? " !pl-[22px]" : "")}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </div>
+
+        {NAV_BOTTOM.filter((item) => !item.adminOnly || user.role === "admin").map(
           (item) => (
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                [
-                  "block px-3 py-2 text-sm rounded transition-colors",
-                  isActive
-                    ? "bg-sky/20 text-paper border-l-2 border-sky pl-[10px]"
-                    : "text-paper/70 hover:text-paper hover:bg-paper/5",
-                ].join(" ")
-              }
+              className={({ isActive }) => navClass(isActive)}
             >
               {item.label}
             </NavLink>
@@ -61,10 +103,7 @@ export function AdminSidebar({
       </nav>
 
       <div className="px-5 py-4 border-t border-paper/10">
-        <Link
-          to="/admin/account"
-          className="block group"
-        >
+        <Link to="/admin/account" className="block group">
           <div className="text-sm text-paper truncate group-hover:text-sky">
             {user.name}
           </div>
@@ -74,11 +113,7 @@ export function AdminSidebar({
           </div>
         </Link>
         <div className="mt-3 flex items-center gap-3 text-xs">
-          <Link
-            to="/"
-            target="_blank"
-            className="text-sky hover:text-paper"
-          >
+          <Link to="/" target="_blank" className="text-sky hover:text-paper">
             View site ↗
           </Link>
           <span className="text-paper/20">·</span>

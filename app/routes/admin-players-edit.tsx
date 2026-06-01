@@ -116,10 +116,10 @@ export default function AdminPlayersEdit() {
   const { player, photoUrl, sponsor1LogoUrl, sponsor2LogoUrl } = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>();
   return (
-    <AdminPage eyebrow="Squad" title={player.name}>
+    <AdminPage eyebrow="Teams" title={player.name}>
       <AdminBreadcrumbs
         items={[
-          { label: "Squad", to: "/admin/players" },
+          { label: player.team === "u21" ? "Under 21s" : "1st Team", to: `/admin/players?team=${player.team}` },
           { label: player.name },
         ]}
       />
