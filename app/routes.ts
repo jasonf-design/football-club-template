@@ -16,6 +16,7 @@ export default [
     route("fixtures/:id", "routes/fixture-detail.tsx"),
     route("team", "routes/team.tsx"),
     route("sponsors", "routes/sponsors.tsx"),
+    route("partnership", "routes/partnership.tsx"),
     route("contact", "routes/contact.tsx"),
     route("pitch", "routes/pitch.tsx"),
     route("pitch/success", "routes/pitch-success.tsx"),

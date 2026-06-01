@@ -7,6 +7,7 @@ const NAV = [
   { to: "/fixtures", label: "Fixtures" },
   { to: "/team", label: "Team" },
   { to: "/sponsors", label: "Sponsors" },
+  { to: "/partnership", label: "Partnership" },
   { to: "/pitch", label: "Sponsor a square" },
   { to: "/shop", label: "Shop" },
   { to: "/contact", label: "Contact" },
