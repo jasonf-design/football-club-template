@@ -16,6 +16,7 @@ const NAV_LEFT = [
 const NAV_RIGHT = [
   { to: "/sponsors", label: "Sponsors" },
   { to: "/partnership", label: "Partnership" },
+  { to: "/support", label: "Support us" },
   { to: "/pitch", label: "Sponsor a square" },
   { to: "/shop", label: "Shop" },
   { to: "/contact", label: "Contact" },

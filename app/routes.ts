@@ -29,6 +29,8 @@ export default [
     route("shop/success", "routes/shop-success.tsx"),
     route("shop/:slug", "routes/shop-product.tsx"),
     route("cart", "routes/cart.tsx"),
+    route("support", "routes/support.tsx"),
+    route("support/success", "routes/support-success.tsx"),
   ]),
 
   // Uploaded image serving — public, no layout, no auth
