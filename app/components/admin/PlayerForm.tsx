@@ -5,6 +5,7 @@ import { PrimaryButton } from "./AdminShell";
 
 export type PlayerFormData = {
   name?: string;
+  team?: "first" | "u21" | null;
   position?: string | null;
   position2?: string | null;
   bio?: string | null;
@@ -61,6 +62,12 @@ export function PlayerForm({
               required
               className="text-xl font-serif !py-3"
             />
+          </Field>
+          <Field name="team" label="Team">
+            <Select name="team" defaultValue={initial.team ?? "first"}>
+              <option value="first">1st Team</option>
+              <option value="u21">Under 21s</option>
+            </Select>
           </Field>
           <FormRow cols={2}>
             <Field name="position" label="Primary position" error={errors.position}>

@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { Link } from "react-router";
-import type { Route } from "./+types/team";
+import type { Route } from "./+types/team-u21";
 import { db } from "~/db.server";
 import { media, players } from "../../db/schema";
 import { Container } from "~/components/Container";
@@ -9,10 +9,10 @@ import { variantSrcset, variantUrl } from "~/lib/uploads";
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "First Team · Doncaster City FC" },
+    { title: "Under 21s · Doncaster City FC" },
     {
       name: "description",
-      content: "Meet the players representing Doncaster City this season.",
+      content: "Meet the Doncaster City FC Under 21s squad.",
     },
   ];
 }
@@ -35,10 +35,9 @@ export async function loader() {
     })
     .from(players)
     .leftJoin(media, eq(media.id, players.photoMediaId))
-    .where(and(eq(players.active, true), eq(players.team, "first")))
+    .where(and(eq(players.active, true), eq(players.team, "u21")))
     .orderBy(asc(players.sortOrder), asc(players.name));
 
-  // Batch-fetch sponsor logo filenames
   const logoIds = squad.flatMap((p) =>
     [p.sponsor1LogoMediaId, p.sponsor2LogoMediaId].filter(Boolean),
   ) as string[];
@@ -62,14 +61,14 @@ export async function loader() {
 
 type SquadPlayer = Awaited<ReturnType<typeof loader>>["squad"][number];
 
-export default function Team({ loaderData }: Route.ComponentProps) {
+export default function TeamU21({ loaderData }: Route.ComponentProps) {
   const { squad } = loaderData;
   return (
     <>
       <PageHeader
-        eyebrow="The squad"
-        title="First team."
-        lede="The eleven who'll be wearing navy and sky this season. Every player, every position, every story."
+        eyebrow="Under 21s"
+        title="The next generation."
+        lede="The squad developing through the Doncaster City system. Tomorrow's first team, playing today."
       />
       <Container size="wide" className="py-16">
         {squad.length === 0 ? (
@@ -78,7 +77,7 @@ export default function Team({ loaderData }: Route.ComponentProps) {
               Squad announcement coming soon.
             </div>
             <p className="mt-3 text-mute max-w-md mx-auto">
-              Once the first team is finalised, every player will be introduced here.
+              Once the Under 21s squad is finalised, every player will be introduced here.
             </p>
           </div>
         ) : (
@@ -127,7 +126,6 @@ function PlayerCard({ player: p }: { player: SquadPlayer }) {
         )}
         <h3 className="font-serif text-xl text-navy mt-1 leading-tight">{p.name}</h3>
 
-        {/* Shirt sponsorship slots */}
         <div className="mt-2 space-y-1.5">
           <SponsorSlot
             name={p.sponsor1Name}
@@ -166,10 +164,7 @@ function SponsorSlot({
   url = ensureAbsolute(url);
   if (!name) {
     return (
-      <Link
-        to={sponsorRoute}
-        className="block hover:opacity-80 transition-opacity"
-      >
+      <Link to={sponsorRoute} className="block hover:opacity-80 transition-opacity">
         <div className="flex items-center gap-1.5 border border-dashed border-line px-2 py-1">
           <span className="text-[9px] uppercase tracking-[0.18em] text-mute/60 font-medium">
             Available to sponsor

@@ -1,17 +1,27 @@
-import { NavLink, Link } from "react-router";
+import { NavLink, Link, useLocation } from "react-router";
 import { Crest } from "./Crest";
 import { CartIcon } from "./CartIcon";
 
-const NAV = [
+const TEAMS_NAV = [
+  { to: "/team", label: "1st Team" },
+  { to: "/team/under-21s", label: "Under 21s" },
+  { to: "/team/under-18s", label: "Under 18s" },
+];
+
+const NAV_LEFT = [
   { to: "/news", label: "News" },
   { to: "/fixtures", label: "Fixtures" },
-  { to: "/team", label: "Team" },
+];
+
+const NAV_RIGHT = [
   { to: "/sponsors", label: "Sponsors" },
   { to: "/partnership", label: "Partnership" },
   { to: "/pitch", label: "Sponsor a square" },
   { to: "/shop", label: "Shop" },
   { to: "/contact", label: "Contact" },
 ];
+
+const NAV_MOBILE = [...NAV_LEFT, ...NAV_RIGHT];
 
 export function SiteHeader({
   nextFixture,
@@ -23,6 +33,9 @@ export function SiteHeader({
     competition: string;
   } | null;
 }) {
+  const location = useLocation();
+  const isTeamsActive = location.pathname.startsWith("/team");
+
   return (
     <header className="relative z-40">
       {/* Match strip */}
@@ -85,7 +98,8 @@ export function SiteHeader({
           </Link>
 
           <nav className="ml-auto hidden lg:flex items-center gap-7">
-            {NAV.map((item) => (
+            {/* Left nav items */}
+            {NAV_LEFT.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -106,6 +120,69 @@ export function SiteHeader({
                 )}
               </NavLink>
             ))}
+
+            {/* Teams dropdown */}
+            <div className="relative group/teams py-2">
+              <button
+                className={[
+                  "flex items-center gap-1 text-sm font-medium tracking-wide transition-colors",
+                  isTeamsActive ? "text-navy" : "text-ink/70 hover:text-navy",
+                ].join(" ")}
+              >
+                Teams
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 4l4 4 4-4" />
+                </svg>
+              </button>
+              {isTeamsActive && (
+                <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-sky" />
+              )}
+              <div className="absolute left-0 top-full pt-1 w-40 opacity-0 pointer-events-none group-hover/teams:opacity-100 group-hover/teams:pointer-events-auto transition-opacity duration-150 z-50">
+                <div className="bg-paper border border-line shadow-lg py-1">
+                  {TEAMS_NAV.map(({ to, label }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      end
+                      className={({ isActive }) =>
+                        [
+                          "block px-4 py-2.5 text-sm transition-colors",
+                          isActive
+                            ? "text-navy bg-sky/10"
+                            : "text-ink/80 hover:bg-line/40",
+                        ].join(" ")
+                      }
+                    >
+                      {label}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right nav items */}
+            {NAV_RIGHT.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  [
+                    "relative text-sm font-medium tracking-wide transition-colors py-2",
+                    isActive ? "text-navy" : "text-ink/70 hover:text-navy",
+                  ].join(" ")
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {item.label}
+                    {isActive && (
+                      <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-sky" />
+                    )}
+                  </>
+                )}
+              </NavLink>
+            ))}
+
             <span className="h-5 w-px bg-line mx-1" aria-hidden />
             <CartIcon />
           </nav>
@@ -114,6 +191,7 @@ export function SiteHeader({
             <CartIcon />
           </div>
 
+          {/* Mobile menu */}
           <details className="lg:hidden relative">
             <summary className="list-none cursor-pointer p-2 -mr-2 select-none relative z-20">
               <span className="sr-only">Open menu</span>
@@ -144,7 +222,46 @@ export function SiteHeader({
                   }
                 }}
               >
-                {NAV.map((item) => (
+                {NAV_LEFT.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      [
+                        "px-4 py-2.5 text-sm border-l-2",
+                        isActive
+                          ? "border-sky text-navy bg-sky-soft/30"
+                          : "border-transparent text-ink/80 hover:bg-line/40",
+                      ].join(" ")
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+
+                {/* Teams section in mobile */}
+                <div className="px-4 pt-3 pb-1 text-[9px] uppercase tracking-[0.24em] text-mute">
+                  Teams
+                </div>
+                {TEAMS_NAV.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end
+                    className={({ isActive }) =>
+                      [
+                        "pl-7 pr-4 py-2 text-sm border-l-2",
+                        isActive
+                          ? "border-sky text-navy bg-sky-soft/30"
+                          : "border-transparent text-ink/80 hover:bg-line/40",
+                      ].join(" ")
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+
+                {NAV_RIGHT.map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}

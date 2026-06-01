@@ -88,6 +88,7 @@ export const posts = sqliteTable(
 export const players = sqliteTable("players", {
   id: id(),
   name: text("name").notNull(),
+  team: text("team", { enum: ["first", "u21"] }).notNull().default("first"),
   position: text("position"),
   position2: text("position2"),
   shirtNumber: integer("shirt_number"),

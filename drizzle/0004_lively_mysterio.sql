@@ -1,0 +1,1 @@
+ALTER TABLE `players` ADD `team` text DEFAULT 'first' NOT NULL;

@@ -18,6 +18,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 const schema = z.object({
   name: z.string().min(2).max(120),
+  team: z.enum(["first", "u21"]).optional(),
   position: z.string().max(40).optional(),
   position2: z.string().max(40).optional(),
   bio: z.string().max(2000).optional(),
@@ -38,6 +39,7 @@ export async function action({ request }: Route.ActionArgs) {
   const form = await request.formData();
   const parsed = schema.safeParse({
     name: form.get("name"),
+    team: (form.get("team") as "first" | "u21") || undefined,
     position: form.get("position") || undefined,
     position2: form.get("position2") || undefined,
     bio: form.get("bio") || undefined,
@@ -62,6 +64,7 @@ export async function action({ request }: Route.ActionArgs) {
   const sortOrder = parsed.data.sortOrder ? Number(parsed.data.sortOrder) : 0;
   await db.insert(players).values({
     name: parsed.data.name,
+    team: parsed.data.team ?? "first",
     position: parsed.data.position ?? null,
     position2: parsed.data.position2 ?? null,
     bio: parsed.data.bio ?? null,
