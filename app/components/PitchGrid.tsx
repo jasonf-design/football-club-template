@@ -112,20 +112,20 @@ export function PitchGrid({
     setShowForm(false);
   }
 
-  // Build grid items: include all regular cells + only origin cells for sponsors
+  // Build all 150 grid items with explicit placement — avoids CSS auto-placement bugs
   const gridItems = useMemo(() => {
     const items = [];
     for (let r = 1; r <= ROWS; r++) {
       for (let c = 1; c <= COLS; c++) {
         const key = `${r}-${c}`;
-        if (sponsorSkipSet.has(key)) continue; // covered by origin's span
-        const origin = sponsorOriginMap.get(key);
+        const originInfo = sponsorOriginMap.get(key);
         const sq = byRowCol.get(key) ?? null;
         items.push({
           row: r,
           col: c,
           sq,
-          origin: origin ?? null,
+          origin: originInfo ?? null,
+          isSkipped: sponsorSkipSet.has(key),
         });
       }
     }
@@ -198,22 +198,27 @@ export function PitchGrid({
               gridTemplateRows: `repeat(${ROWS}, 1fr)`,
             }}
           >
-            {gridItems.map(({ row, col, sq, origin }) => (
-              <GridCell
-                key={`${row}-${col}`}
-                row={row}
-                col={col}
-                square={sq}
-                origin={origin}
-                selected={sq ? selected.has(sq.id) : false}
-                onToggle={sq && sq.status === "available" ? () => toggle(sq) : undefined}
-                onSponsorEnter={(sponsor, e) => {
-                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  setTooltip({ sponsor, x: rect.left + rect.width / 2, y: rect.top });
-                }}
-                onSponsorLeave={() => setTooltip(null)}
-              />
-            ))}
+            {gridItems.map(({ row, col, sq, origin, isSkipped }) =>
+              isSkipped ? (
+                // Empty placeholder — visually covered by the sponsor block above it
+                <div key={`${row}-${col}`} style={{ gridColumn: String(col), gridRow: String(row) }} />
+              ) : (
+                <GridCell
+                  key={`${row}-${col}`}
+                  row={row}
+                  col={col}
+                  square={sq}
+                  origin={origin}
+                  selected={sq ? selected.has(sq.id) : false}
+                  onToggle={sq && sq.status === "available" ? () => toggle(sq) : undefined}
+                  onSponsorEnter={(sponsor, e) => {
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    setTooltip({ sponsor, x: rect.left + rect.width / 2, y: rect.top });
+                  }}
+                  onSponsorLeave={() => setTooltip(null)}
+                />
+              )
+            )}
           </div>
         </div>
 
@@ -393,17 +398,19 @@ function GridCell({
     );
   }
 
+  // Explicit placement for every non-sponsor cell — prevents CSS auto-placement drift
+  const placement = { gridColumn: String(col), gridRow: String(row) };
   const base = "relative transition-colors";
 
   if (!square) {
-    return <div className={base} style={{ borderRight: "1px solid rgba(255,255,255,0.04)" }} />;
+    return <div className={base} style={{ ...placement, borderRight: "1px solid rgba(255,255,255,0.04)" }} />;
   }
 
   if (square.status === "sold") {
     return (
       <div
         className={`${base} bg-sky/65 flex items-center justify-center cursor-help`}
-        style={{ boxShadow: "inset 0 0 0 1px rgba(100,200,255,0.3)" }}
+        style={{ ...placement, boxShadow: "inset 0 0 0 1px rgba(100,200,255,0.3)" }}
         title={square.sponsorName ?? "Sold"}
       >
         {square.sponsorName && (
@@ -418,7 +425,7 @@ function GridCell({
   if (square.status === "pending") {
     return (
       <div className={`${base} bg-white/8 cursor-not-allowed`}
-        style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" }}
+        style={{ ...placement, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" }}
         title="Reserved" />
     );
   }
@@ -435,6 +442,7 @@ function GridCell({
           : "bg-white/[0.04] hover:bg-white/[0.14] cursor-pointer",
       ].join(" ")}
       style={{
+        ...placement,
         boxShadow: selected
           ? "inset 0 0 0 2px #7dd3fc"
           : "inset 0 0 0 1px rgba(255,255,255,0.06)",
