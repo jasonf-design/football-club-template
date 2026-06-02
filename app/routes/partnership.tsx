@@ -68,7 +68,17 @@ export default function Partnership() {
           Something went wrong — please check your details and try again.
         </div>
       )}
-      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" as never }}>
+      {/* Portrait mobile nudge — hidden in landscape and on wider screens */}
+      <div className="flex flex-col items-center justify-center gap-4 py-16 px-8 text-center sm:hidden landscape:hidden">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/40">
+          <rect x="5" y="2" width="14" height="20" rx="2" />
+          <path d="M12 18h.01" />
+        </svg>
+        <p className="text-navy font-medium">Rotate your device</p>
+        <p className="text-sm text-mute max-w-xs">This brochure is best viewed in landscape mode or on a larger screen.</p>
+      </div>
+
+      <div className="hidden sm:block landscape:block" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" as never }}>
         <iframe
           ref={iframeRef}
           src="/partnership-brochure.html"
