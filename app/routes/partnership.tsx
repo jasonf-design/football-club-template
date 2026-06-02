@@ -68,12 +68,14 @@ export default function Partnership() {
           Something went wrong — please check your details and try again.
         </div>
       )}
-      <iframe
-        ref={iframeRef}
-        src="/partnership-brochure.html"
-        title="Doncaster City FC 2026/27 Partnership Brochure"
-        style={{ width: "100%", minHeight: "100vh", border: "none", display: "block", overflow: "hidden" }}
-      />
+      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" as never }}>
+        <iframe
+          ref={iframeRef}
+          src="/partnership-brochure.html"
+          title="Doncaster City FC 2026/27 Partnership Brochure"
+          style={{ width: "100%", minWidth: "800px", minHeight: "100vh", border: "none", display: "block" }}
+        />
+      </div>
     </>
   );
 }
