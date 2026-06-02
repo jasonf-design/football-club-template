@@ -191,9 +191,9 @@ function FeaturedWithSpotlight({ item: s }: { item: Sponsor }) {
               sizes="(min-width: 768px) 50vw, 100vw"
             />
             <img
-              src={variantUrl(filename, 800, fallback)}
+              src={variantUrl(filename, 400, fallback)}
               srcSet={variantSrcset(filename, fallback) ?? undefined}
-              sizes="(min-width: 768px) 50vw, 100vw"
+              sizes="(min-width: 768px) 40vw, 100vw"
               alt={s.name}
               loading="lazy"
               decoding="async"
@@ -207,7 +207,7 @@ function FeaturedWithSpotlight({ item: s }: { item: Sponsor }) {
         )}
       </a>
       <div className="border-t md:border-t-0 md:border-l border-line bg-paper-warm/30 p-8 md:p-10 flex flex-col justify-center">
-        <div className="text-[10px] uppercase tracking-[0.28em] text-sky mb-3">
+        <div className="text-[10px] uppercase tracking-[0.28em] text-navy mb-3">
           Platinum Shirt Sponsor
         </div>
         <h3 className="font-serif text-2xl text-navy leading-snug mb-4">
@@ -338,7 +338,7 @@ function SponsorCard({ sponsor: s }: { sponsor: Sponsor }) {
           ) : null}
         </div>
       </div>
-      <div className="border-t border-line px-2 py-1.5 text-center text-[9px] font-semibold tracking-[0.12em] text-navy/60 uppercase truncate">
+      <div className="border-t border-line px-2 py-1.5 text-center text-[9px] font-semibold tracking-[0.12em] text-navy/80 uppercase truncate">
         {s.name}
       </div>
     </a>
@@ -377,10 +377,10 @@ function PlayerSponsorsSection({ sponsors: items }: { sponsors: PlayerSponsor[] 
                 </div>
               </div>
               <div className="border-t border-line px-2 py-1.5 text-center">
-                <div className="text-[9px] font-semibold tracking-[0.12em] text-navy/60 uppercase truncate">
+                <div className="text-[9px] font-semibold tracking-[0.12em] text-navy/80 uppercase truncate">
                   {s.sponsorName}
                 </div>
-                <div className="text-[8px] tracking-[0.08em] text-mute/60 truncate mt-0.5">
+                <div className="text-[8px] tracking-[0.08em] text-mute truncate mt-0.5">
                   Sponsoring {s.playerName}
                 </div>
               </div>

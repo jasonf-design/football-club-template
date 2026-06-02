@@ -3,7 +3,7 @@
  * filesystem, sharp, or the database lives in `uploads.server.ts`.
  */
 
-export const VARIANT_WIDTHS = [400, 600, 800, 1200] as const;
+export const VARIANT_WIDTHS = [120, 240, 400, 600, 800, 1200] as const;
 export type VariantWidth = (typeof VARIANT_WIDTHS)[number];
 
 export const VARIANT_FORMATS = ["avif", "webp", "jpeg", "png"] as const;

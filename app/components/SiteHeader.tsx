@@ -188,10 +188,11 @@ export function SiteHeader({
             <CartIcon />
           </nav>
 
+          <div className="lg:hidden ml-auto flex items-center gap-1">
+            <CartIcon />
           {/* Mobile menu */}
-          <details className="lg:hidden ml-auto relative">
-            <summary className="list-none cursor-pointer p-2 -mr-2 select-none relative z-20 flex items-center gap-3">
-              <CartIcon />
+          <details className="relative">
+            <summary className="list-none cursor-pointer p-2 -mr-2 select-none relative z-20">
               <span className="sr-only">Open menu</span>
               <svg
                 width="22"
@@ -278,6 +279,7 @@ export function SiteHeader({
               </nav>
             </div>
           </details>
+          </div>
         </div>
       </div>
     </header>
