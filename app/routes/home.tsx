@@ -561,13 +561,11 @@ function SponsorsStrip({
                 <picture>
                   <source
                     type="image/avif"
-                    srcSet={variantSrcset(filename, "avif") ?? undefined}
-                    sizes="200px"
+                    srcSet={`${variantUrl(filename, 120, "avif")} 1x, ${variantUrl(filename, 240, "avif")} 2x`}
                   />
                   <img
-                    src={variantUrl(filename, 400, fallback)}
-                    srcSet={variantSrcset(filename, fallback) ?? undefined}
-                    sizes="200px"
+                    src={variantUrl(filename, 120, fallback)}
+                    srcSet={`${variantUrl(filename, 120, fallback)} 1x, ${variantUrl(filename, 240, fallback)} 2x`}
                     alt={s.name}
                     loading="lazy"
                     decoding="async"
