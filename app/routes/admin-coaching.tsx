@@ -1,5 +1,5 @@
 import { and, asc, eq } from "drizzle-orm";
-import { Form, Link } from "react-router";
+import { Form, Link, redirect } from "react-router";
 import type { Route } from "./+types/admin-coaching";
 import { db } from "~/db.server";
 import { coachingStaff, media } from "../../db/schema";
@@ -28,7 +28,9 @@ export function meta(_: Route.MetaArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
   await requireAdmin(request);
   const url = new URL(request.url);
-  const team = (url.searchParams.get("team") ?? "first") as "first" | "u23" | "u18";
+  const rawTeam = url.searchParams.get("team");
+  if (rawTeam === "u21") throw redirect("/admin/coaching?team=u23");
+  const team = (rawTeam ?? "first") as "first" | "u23" | "u18";
   const rows = await db
     .select({
       id: coachingStaff.id,
