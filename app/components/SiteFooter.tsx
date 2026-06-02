@@ -47,7 +47,7 @@ export function SiteFooter() {
             title="Club"
             links={[
               { to: "/team", label: "First Team" },
-              { to: "/team/under-21s", label: "Under 21s" },
+              { to: "/team/under-23s", label: "Under 23s" },
               { to: "/team/under-18s", label: "Under 18s" },
               { to: "/fixtures", label: "Fixtures & Results" },
               { to: "/news", label: "News" },

@@ -14,12 +14,12 @@ export function meta(_: Route.MetaArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
   await requireAdmin(request);
   const url = new URL(request.url);
-  const team = (url.searchParams.get("team") ?? "first") as "first" | "u21" | "u18";
+  const team = (url.searchParams.get("team") ?? "first") as "first" | "u23" | "u18";
   return { team };
 }
 
 const schema = z.object({
-  team: z.enum(["first", "u21", "u18"]),
+  team: z.enum(["first", "u23", "u18"]),
   name: z.string().min(2).max(120),
   role: z.string().min(1).max(100),
   photoMediaId: z.string().max(64).optional(),
@@ -57,7 +57,7 @@ export async function action({ request }: Route.ActionArgs) {
   throw redirect(`/admin/coaching?team=${parsed.data.team}`);
 }
 
-const TEAM_LABEL = { first: "1st Team", u21: "Under 21s", u18: "Under 18s" };
+const TEAM_LABEL = { first: "1st Team", u23: "Under 23s", u18: "Under 18s" };
 
 export default function AdminCoachingNew() {
   const { team } = useLoaderData<typeof loader>();

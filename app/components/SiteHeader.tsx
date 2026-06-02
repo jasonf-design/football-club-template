@@ -4,7 +4,7 @@ import { CartIcon } from "./CartIcon";
 
 const TEAMS_NAV = [
   { to: "/team", label: "1st Team" },
-  { to: "/team/under-21s", label: "Under 21s" },
+  { to: "/team/under-23s", label: "Under 23s" },
   { to: "/team/under-18s", label: "Under 18s" },
 ];
 

@@ -5,7 +5,7 @@ import { PrimaryButton } from "./AdminShell";
 
 export type PlayerFormData = {
   name?: string;
-  team?: "first" | "u21" | null;
+  team?: "first" | "u23" | null;
   position?: string | null;
   position2?: string | null;
   bio?: string | null;
@@ -66,7 +66,7 @@ export function PlayerForm({
           <Field name="team" label="Team">
             <Select name="team" defaultValue={initial.team ?? "first"}>
               <option value="first">1st Team</option>
-              <option value="u21">Under 21s</option>
+              <option value="u23">Under 23s</option>
             </Select>
           </Field>
           <FormRow cols={2}>

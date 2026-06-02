@@ -17,7 +17,7 @@ import { uploadUrlFor } from "~/lib/uploads";
 
 const TEAM_META = {
   first: { label: "1st Team", title: "1st Team coaching staff" },
-  u21:   { label: "Under 21s", title: "Under 21s coaching staff" },
+  u23:   { label: "Under 23s", title: "Under 23s coaching staff" },
   u18:   { label: "Under 18s", title: "Under 18s coaching staff" },
 } as const;
 
@@ -28,7 +28,7 @@ export function meta(_: Route.MetaArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
   await requireAdmin(request);
   const url = new URL(request.url);
-  const team = (url.searchParams.get("team") ?? "first") as "first" | "u21" | "u18";
+  const team = (url.searchParams.get("team") ?? "first") as "first" | "u23" | "u18";
   const rows = await db
     .select({
       id: coachingStaff.id,

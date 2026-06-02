@@ -14,13 +14,13 @@ export function meta(_: Route.MetaArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
   await requireAdmin(request);
   const url = new URL(request.url);
-  const team = (url.searchParams.get("team") ?? "first") as "first" | "u21";
+  const team = (url.searchParams.get("team") ?? "first") as "first" | "u23";
   return { team };
 }
 
 const schema = z.object({
   name: z.string().min(2).max(120),
-  team: z.enum(["first", "u21"]).optional(),
+  team: z.enum(["first", "u23"]).optional(),
   position: z.string().max(40).optional(),
   position2: z.string().max(40).optional(),
   bio: z.string().max(2000).optional(),
@@ -41,7 +41,7 @@ export async function action({ request }: Route.ActionArgs) {
   const form = await request.formData();
   const parsed = schema.safeParse({
     name: form.get("name"),
-    team: (form.get("team") as "first" | "u21") || undefined,
+    team: (form.get("team") as "first" | "u23") || undefined,
     position: form.get("position") || undefined,
     position2: form.get("position2") || undefined,
     bio: form.get("bio") || undefined,
@@ -84,7 +84,7 @@ export async function action({ request }: Route.ActionArgs) {
   throw redirect(`/admin/players?team=${parsed.data.team ?? "first"}`);
 }
 
-const TEAM_LABEL = { first: "1st Team", u21: "Under 21s" };
+const TEAM_LABEL = { first: "1st Team", u23: "Under 23s" };
 
 export default function AdminPlayersNew() {
   const { team } = useLoaderData<typeof loader>();

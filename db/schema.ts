@@ -88,7 +88,7 @@ export const posts = sqliteTable(
 export const players = sqliteTable("players", {
   id: id(),
   name: text("name").notNull(),
-  team: text("team", { enum: ["first", "u21"] }).notNull().default("first"),
+  team: text("team", { enum: ["first", "u23"] }).notNull().default("first"),
   position: text("position"),
   position2: text("position2"),
   shirtNumber: integer("shirt_number"),
@@ -146,7 +146,7 @@ export const fixtures = sqliteTable(
 
 export const coachingStaff = sqliteTable("coaching_staff", {
   id: id(),
-  team: text("team", { enum: ["first", "u21", "u18"] }).notNull(),
+  team: text("team", { enum: ["first", "u23", "u18"] }).notNull(),
   name: text("name").notNull(),
   role: text("role").notNull(),
   photoMediaId: text("photo_media_id").references(() => media.id, {

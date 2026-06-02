@@ -41,7 +41,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
 const schema = z.object({
   name: z.string().min(2).max(120),
-  team: z.enum(["first", "u21"]).optional(),
+  team: z.enum(["first", "u23"]).optional(),
   position: z.string().max(40).optional(),
   position2: z.string().max(40).optional(),
   bio: z.string().max(2000).optional(),
@@ -66,7 +66,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   }
   const parsed = schema.safeParse({
     name: form.get("name"),
-    team: (form.get("team") as "first" | "u21") || undefined,
+    team: (form.get("team") as "first" | "u23") || undefined,
     position: form.get("position") || undefined,
     position2: form.get("position2") || undefined,
     bio: form.get("bio") || undefined,
@@ -119,7 +119,7 @@ export default function AdminPlayersEdit() {
     <AdminPage eyebrow="Teams" title={player.name}>
       <AdminBreadcrumbs
         items={[
-          { label: player.team === "u21" ? "Under 21s" : "1st Team", to: `/admin/players?team=${player.team}` },
+          { label: player.team === "u23" ? "Under 23s" : "1st Team", to: `/admin/players?team=${player.team}` },
           { label: player.name },
         ]}
       />

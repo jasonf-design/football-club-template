@@ -22,12 +22,12 @@ const NAV_BOTTOM: NavItem[] = [
 
 const TEAM_LINKS = [
   { to: "/admin/players?team=first", label: "1st Team", teamParam: "first" },
-  { to: "/admin/players?team=u21", label: "Under 21s", teamParam: "u21" },
+  { to: "/admin/players?team=u21", label: "Under 23s", teamParam: "u23" },
 ];
 
 const COACHING_LINKS = [
   { to: "/admin/coaching?team=first", label: "1st Team", teamParam: "first" },
-  { to: "/admin/coaching?team=u21", label: "Under 21s", teamParam: "u21" },
+  { to: "/admin/coaching?team=u21", label: "Under 23s", teamParam: "u23" },
   { to: "/admin/coaching?team=u18", label: "Under 18s", teamParam: "u18" },
 ];
 

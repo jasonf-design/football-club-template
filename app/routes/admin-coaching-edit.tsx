@@ -30,7 +30,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 }
 
 const schema = z.object({
-  team: z.enum(["first", "u21", "u18"]),
+  team: z.enum(["first", "u23", "u18"]),
   name: z.string().min(2).max(120),
   role: z.string().min(1).max(100),
   photoMediaId: z.string().max(64).optional(),
@@ -75,7 +75,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   throw redirect(`/admin/coaching?team=${parsed.data.team}`);
 }
 
-const TEAM_LABEL = { first: "1st Team", u21: "Under 21s", u18: "Under 18s" };
+const TEAM_LABEL = { first: "1st Team", u23: "Under 23s", u18: "Under 18s" };
 
 export default function AdminCoachingEdit() {
   const { member, photoUrl } = useLoaderData<typeof loader>();

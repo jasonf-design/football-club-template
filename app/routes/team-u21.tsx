@@ -10,10 +10,10 @@ import { CoachingSection } from "~/components/CoachingSection";
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Under 21s · Doncaster City FC" },
+    { title: "Under 23s · Doncaster City FC" },
     {
       name: "description",
-      content: "Meet the Doncaster City FC Under 21s squad.",
+      content: "Meet the Doncaster City FC Under 23s squad.",
     },
   ];
 }
@@ -36,7 +36,7 @@ export async function loader() {
     })
     .from(players)
     .leftJoin(media, eq(media.id, players.photoMediaId))
-    .where(and(eq(players.active, true), eq(players.team, "u21")))
+    .where(and(eq(players.active, true), eq(players.team, "u23")))
     .orderBy(asc(players.sortOrder), asc(players.name));
 
   const logoIds = squad.flatMap((p) =>
@@ -54,7 +54,7 @@ export async function loader() {
   const staffRows = await db
     .select({ name: coachingStaff.name, role: coachingStaff.role, photoMediaId: coachingStaff.photoMediaId })
     .from(coachingStaff)
-    .where(and(eq(coachingStaff.team, "u21"), eq(coachingStaff.active, true)))
+    .where(and(eq(coachingStaff.team, "u23"), eq(coachingStaff.active, true)))
     .orderBy(asc(coachingStaff.sortOrder), asc(coachingStaff.name));
 
   const staffPhotoIds = staffRows.map((s) => s.photoMediaId).filter(Boolean) as string[];
@@ -84,7 +84,7 @@ export default function TeamU21({ loaderData }: Route.ComponentProps) {
   return (
     <>
       <PageHeader
-        eyebrow="Under 21s"
+        eyebrow="Under 23s"
         title="The next generation."
         lede="The squad developing through the Doncaster City system. Tomorrow's first team, playing today."
       />
@@ -95,7 +95,7 @@ export default function TeamU21({ loaderData }: Route.ComponentProps) {
               Squad announcement coming soon.
             </div>
             <p className="mt-3 text-mute max-w-md mx-auto">
-              Once the Under 21s squad is finalised, every player will be introduced here.
+              Once the Under 23s squad is finalised, every player will be introduced here.
             </p>
           </div>
         ) : (
