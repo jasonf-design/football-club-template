@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import type { Route } from "./+types/partnership";
 
@@ -15,44 +15,65 @@ export function meta(_: Route.MetaArgs) {
 
 export default function Partnership() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [params] = useSearchParams();
   const submitted = params.get("submitted") === "1";
   const error = params.get("error") === "1";
+  const [scaledHeight, setScaledHeight] = useState<number | null>(null);
 
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe) return;
+    const wrapper = wrapperRef.current;
+    if (!iframe || !wrapper) return;
 
     let timer: ReturnType<typeof setTimeout>;
-    let stable = 0;
-    let last = 0;
 
-    const measure = () => {
+    const applyScale = () => {
       try {
-        const h = iframe.contentDocument?.documentElement?.scrollHeight ?? 0;
-        if (h > 100) {
-          iframe.style.height = h + "px";
-          if (h === last) {
-            stable++;
-          } else {
-            stable = 0;
-            last = h;
-          }
-        }
-        if (stable < 3) {
-          timer = setTimeout(measure, 400);
-        }
+        const doc = iframe.contentDocument?.documentElement;
+        if (!doc) return;
+        const contentW = doc.scrollWidth;
+        const contentH = doc.scrollHeight;
+        if (contentW < 100 || contentH < 100) return;
+
+        const wrapperW = wrapper.clientWidth;
+        const scale = Math.min(1, wrapperW / contentW);
+
+        iframe.style.width = `${contentW}px`;
+        iframe.style.height = `${contentH}px`;
+        iframe.style.transform = scale < 1 ? `scale(${scale})` : "";
+        iframe.style.transformOrigin = "top left";
+        setScaledHeight(contentH * scale);
       } catch {
         // cross-origin guard
       }
     };
 
-    iframe.addEventListener("load", measure);
-    timer = setTimeout(measure, 200);
+    const onLoad = () => {
+      // Poll until content settles then apply scale
+      let stable = 0;
+      let lastH = 0;
+      const poll = () => {
+        try {
+          const h = iframe.contentDocument?.documentElement?.scrollHeight ?? 0;
+          if (h === lastH) stable++;
+          else { stable = 0; lastH = h; }
+          if (stable >= 3) { applyScale(); return; }
+          timer = setTimeout(poll, 300);
+        } catch { applyScale(); }
+      };
+      timer = setTimeout(poll, 200);
+    };
+
+    const onResize = () => applyScale();
+
+    iframe.addEventListener("load", onLoad);
+    window.addEventListener("resize", onResize);
 
     return () => {
       clearTimeout(timer);
-      iframe.removeEventListener("load", measure);
+      iframe.removeEventListener("load", onLoad);
+      window.removeEventListener("resize", onResize);
     };
   }, []);
 
@@ -68,22 +89,15 @@ export default function Partnership() {
           Something went wrong — please check your details and try again.
         </div>
       )}
-      {/* Portrait mobile nudge — hidden in landscape and on wider screens */}
-      <div className="flex flex-col items-center justify-center gap-4 py-16 px-8 text-center sm:hidden landscape:hidden">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/40">
-          <rect x="5" y="2" width="14" height="20" rx="2" />
-          <path d="M12 18h.01" />
-        </svg>
-        <p className="text-navy font-medium">Rotate your device</p>
-        <p className="text-sm text-mute max-w-xs">This brochure is best viewed in landscape mode or on a larger screen.</p>
-      </div>
-
-      <div className="hidden sm:block landscape:block" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" as never }}>
+      <div
+        ref={wrapperRef}
+        style={{ width: "100%", overflow: "hidden", height: scaledHeight ?? "100vh" }}
+      >
         <iframe
           ref={iframeRef}
           src="/partnership-brochure.html"
           title="Doncaster City FC 2026/27 Partnership Brochure"
-          style={{ width: "100%", minWidth: "800px", minHeight: "100vh", border: "none", display: "block" }}
+          style={{ border: "none", display: "block" }}
         />
       </div>
     </>
