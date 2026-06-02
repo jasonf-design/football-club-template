@@ -99,9 +99,12 @@ export default function TeamU21({ loaderData }: Route.ComponentProps) {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
-            {squad.map((p) => <PlayerCard key={p.id} player={p} />)}
-          </div>
+          <>
+            <h2 className="sr-only">Players</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
+              {squad.map((p) => <PlayerCard key={p.id} player={p} />)}
+            </div>
+          </>
         )}
         <CoachingSection staff={staff} />
       </Container>
@@ -185,7 +188,7 @@ function SponsorSlot({
     return (
       <Link to={sponsorRoute} className="block hover:opacity-80 transition-opacity">
         <div className="flex items-center gap-1.5 border border-dashed border-line px-2 py-1">
-          <span className="text-[9px] uppercase tracking-[0.18em] text-mute/60 font-medium">
+          <span className="text-[9px] uppercase tracking-[0.18em] text-mute font-medium">
             Available to sponsor
           </span>
         </div>
@@ -212,7 +215,7 @@ function SponsorSlot({
 
   return (
     <div>
-      <div className="text-[9px] uppercase tracking-[0.14em] text-mute/60 mb-0.5">Sponsored by</div>
+      <div className="text-[9px] uppercase tracking-[0.14em] text-mute mb-0.5">Sponsored by</div>
       {url ? (
         <a href={url} target="_blank" rel="noreferrer" className="block hover:opacity-80 transition-opacity">
           {inner}
