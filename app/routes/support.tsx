@@ -76,75 +76,83 @@ export default function Support(_: Route.ComponentProps) {
         lede="Every pound goes directly towards kit, footballs, equipment, and helping Doncaster City FC grow. No amount is too small — it all adds up."
       />
 
-      <Container size="default" className="py-16">
-        <div className="max-w-xl">
-          {/* What it funds */}
-          <div className="mb-10 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              { label: "Kit & strips", icon: "👕" },
-              { label: "Match balls", icon: "⚽" },
-              { label: "New teams", icon: "🏆" },
-              { label: "Training gear", icon: "🎽" },
-            ].map((item) => (
-              <div key={item.label} className="border border-line bg-paper-warm/30 px-4 py-5 text-center">
-                <div className="text-2xl mb-2">{item.icon}</div>
-                <div className="text-[10px] uppercase tracking-[0.2em] text-mute">{item.label}</div>
-              </div>
-            ))}
-          </div>
+      <Container size="wide" className="py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
 
-          <form method="post" noValidate>
-            <input type="hidden" name="amount" id="amount-hidden" />
-
-            <div className="text-[10px] uppercase tracking-[0.28em] text-mute mb-3">
-              Choose an amount
-            </div>
-
-            {/* Preset buttons */}
-            <div className="grid grid-cols-4 gap-3 mb-3">
-              {PRESET_AMOUNTS.map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  onClick={() => selectAmount(amt)}
-                  className="preset-btn border border-line bg-paper-warm/30 py-4 text-center font-serif text-xl text-navy hover:border-navy hover:bg-navy/5 transition-colors focus:outline-none"
-                  data-amount={amt}
-                >
-                  £{amt}
-                </button>
+          {/* Left: what it funds */}
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.28em] text-mute mb-6">Your money goes towards</div>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: "New Kits", icon: "👕" },
+                { label: "Match balls", icon: "⚽" },
+                { label: "New teams", icon: "🏆" },
+                { label: "Training gear", icon: "🎽" },
+              ].map((item) => (
+                <div key={item.label} className="border border-line bg-paper-warm/30 px-6 py-8 text-center">
+                  <div className="text-4xl mb-3">{item.icon}</div>
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-mute">{item.label}</div>
+                </div>
               ))}
             </div>
+          </div>
 
-            {/* Custom amount */}
-            <div className="flex items-center border border-line bg-paper-warm/30 mb-6 focus-within:border-navy transition-colors">
-              <span className="px-4 font-serif text-xl text-mute select-none">£</span>
-              <input
-                id="custom-amount"
-                type="number"
-                min="1"
-                placeholder="Other amount"
-                className="flex-1 bg-transparent py-4 pr-4 text-navy font-serif text-xl placeholder:text-mute/40 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                onInput={(e) => selectCustom((e.target as HTMLInputElement).value)}
-              />
-            </div>
+          {/* Right: form */}
+          <div>
+            <form method="post" noValidate>
+              <input type="hidden" name="amount" id="amount-hidden" />
 
-            {result?.error && (
-              <div className="mb-4 border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {result.error}
+              <div className="text-[10px] uppercase tracking-[0.28em] text-mute mb-4">
+                Choose an amount
               </div>
-            )}
 
-            <button
-              type="submit"
-              className="w-full bg-navy text-paper py-4 font-semibold text-sm tracking-wide uppercase hover:bg-navy-deep transition-colors"
-            >
-              Support the club →
-            </button>
+              {/* Preset buttons */}
+              <div className="grid grid-cols-4 gap-3 mb-3">
+                {PRESET_AMOUNTS.map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => selectAmount(amt)}
+                    className="preset-btn border border-line bg-paper-warm/30 py-5 text-center font-serif text-2xl text-navy hover:border-navy hover:bg-navy/5 transition-colors focus:outline-none"
+                    data-amount={amt}
+                  >
+                    £{amt}
+                  </button>
+                ))}
+              </div>
 
-            <p className="mt-4 text-xs text-mute text-center leading-relaxed">
-              Secure payment via Stripe. This is a voluntary contribution — no goods or services are provided in return.
-            </p>
-          </form>
+              {/* Custom amount */}
+              <div className="flex items-center border border-line bg-paper-warm/30 mb-6 focus-within:border-navy transition-colors">
+                <span className="px-4 font-serif text-2xl text-mute select-none">£</span>
+                <input
+                  id="custom-amount"
+                  type="number"
+                  min="1"
+                  placeholder="Other amount"
+                  className="flex-1 bg-transparent py-5 pr-4 text-navy font-serif text-2xl placeholder:text-mute/40 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  onInput={(e) => selectCustom((e.target as HTMLInputElement).value)}
+                />
+              </div>
+
+              {result?.error && (
+                <div className="mb-4 border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {result.error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full bg-navy text-paper py-5 font-semibold text-base tracking-wide uppercase hover:bg-navy-deep transition-colors"
+              >
+                Support the club →
+              </button>
+
+              <p className="mt-4 text-xs text-mute text-center leading-relaxed">
+                Secure payment via Stripe. This is a voluntary contribution — no goods or services are provided in return.
+              </p>
+            </form>
+          </div>
+
         </div>
       </Container>
 
