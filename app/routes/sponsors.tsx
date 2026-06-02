@@ -137,6 +137,8 @@ export default function Sponsors({ loaderData }: Route.ComponentProps) {
         </Link>
       </PageHeader>
 
+      <SmileThaiSpotlight />
+
       <Container size="wide" className="py-16 space-y-16">
         {sponsors.length === 0 ? (
           <BecomePartnerEmpty />
@@ -329,6 +331,65 @@ function PlayerSponsorsSection({ sponsors: items }: { sponsors: PlayerSponsor[] 
         })}
       </div>
     </section>
+  );
+}
+
+const SMILE_THAI_FILENAME = "p652w6iha04yvcli9ypoogb0.jpg";
+
+function SmileThaiSpotlight() {
+  const fallback = fallbackFormatFor(SMILE_THAI_FILENAME);
+  return (
+    <div className="border-b border-line bg-paper-warm/40">
+      <Container size="wide" className="py-14">
+        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-10 items-start">
+          <div className="border border-line bg-paper aspect-[3/4] flex items-center justify-center overflow-hidden">
+            <picture className="contents">
+              <source
+                type="image/avif"
+                srcSet={variantSrcset(SMILE_THAI_FILENAME, "avif") ?? undefined}
+                sizes="280px"
+              />
+              <img
+                src={variantUrl(SMILE_THAI_FILENAME, 400, fallback)}
+                srcSet={variantSrcset(SMILE_THAI_FILENAME, fallback) ?? undefined}
+                sizes="280px"
+                alt="Smile Thai Massage Therapy"
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover"
+              />
+            </picture>
+          </div>
+
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.28em] text-sky mb-3">
+              Platinum Shirt Sponsor
+            </div>
+            <h2 className="font-serif text-3xl text-navy leading-snug mb-5">
+              Proudly Sponsored by<br />Smile Thai Massage Therapy
+            </h2>
+            <div className="space-y-3 text-sm text-navy/80 leading-relaxed max-w-prose">
+              <p>Doncaster City FC would like to thank our Platinum Shirt Sponsor, Smile Thai Massage Therapy, for their fantastic support of the club.</p>
+              <p>Based in Doncaster, Smile Thai Massage Therapy offers a range of professional massage and wellness treatments designed to help relieve stress, ease muscle tension, support recovery and improve overall wellbeing.</p>
+              <p>As a community club, sponsorship from local businesses like Smile Thai Massage Therapy helps us invest in our players, facilities and future growth. We are incredibly grateful for their commitment to the Danum Blues.</p>
+              <p>If you&rsquo;re looking to relax, recover after sport, or simply take some time for yourself, we would encourage our supporters, players and families to visit Smile Thai Massage Therapy and experience their professional service for themselves.</p>
+              <p>Thank you for helping support Doncaster City FC both on and off the pitch.</p>
+            </div>
+            <a
+              href="https://smilethaimassage.co.uk"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 mt-7 bg-navy text-paper px-6 py-3 text-xs font-semibold tracking-[0.18em] uppercase hover:bg-navy-deep transition-colors"
+            >
+              Visit smilethaimassage.co.uk
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M2 10L10 2M10 2H5M10 2v5" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </Container>
+    </div>
   );
 }
 
