@@ -441,12 +441,11 @@ function SupportersWall({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {commercialSponsors.map((s) => {
                 const badge = TIER_BADGE[s.tier];
+                const Tag = s.website ? "a" : "div";
                 return (
-                  <a
+                  <Tag
                     key={s.id}
-                    href={s.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    {...(s.website ? { href: s.website, target: "_blank", rel: "noopener noreferrer" } : {})}
                     className="flex items-center gap-4 px-4 py-3 border transition-colors hover:border-navy/30 hover:bg-paper-warm/40"
                     style={{ borderColor: badge.border, background: badge.bg }}
                   >
@@ -465,7 +464,7 @@ function SupportersWall({
                     {s.website && (
                       <span className="ml-auto text-mute text-xs shrink-0">↗</span>
                     )}
-                  </a>
+                  </Tag>
                 );
               })}
             </div>

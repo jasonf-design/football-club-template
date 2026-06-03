@@ -561,11 +561,11 @@ function SponsorsStrip({
                 <picture>
                   <source
                     type="image/avif"
-                    srcSet={`${variantUrl(filename, 120, "avif")} 1x, ${variantUrl(filename, 240, "avif")} 2x`}
+                    srcSet={`${variantUrl(filename, 120, "avif")} 1x, ${variantUrl(filename, 400, "avif")} 2x`}
                   />
                   <img
                     src={variantUrl(filename, 120, fallback)}
-                    srcSet={`${variantUrl(filename, 120, fallback)} 1x, ${variantUrl(filename, 240, fallback)} 2x`}
+                    srcSet={`${variantUrl(filename, 120, fallback)} 1x, ${variantUrl(filename, 400, fallback)} 2x`}
                     alt={s.name}
                     loading="lazy"
                     decoding="async"
@@ -573,7 +573,7 @@ function SponsorsStrip({
                   />
                 </picture>
               ) : (
-                <span className="text-xl font-display tracking-wider text-navy/60 hover:text-navy transition-colors">
+                <span className="text-xl font-display tracking-wider text-navy/80 hover:text-navy transition-colors">
                   {s.name.toUpperCase()}
                 </span>
               );
