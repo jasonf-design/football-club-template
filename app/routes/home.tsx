@@ -28,9 +28,7 @@ export function links() {
     {
       rel: "preload",
       as: "image",
-      type: "image/avif",
-      imageSrcSet: "/hero-768.avif 768w, /hero.avif 1248w",
-      imageSizes: "100vw",
+      href: "/hero1.png",
       fetchPriority: "high",
     },
   ];
@@ -120,13 +118,8 @@ function Hero({
   return (
     <section className="relative bg-navy text-paper overflow-hidden">
       <picture>
-        <source
-          type="image/avif"
-          srcSet="/hero-768.avif 768w, /hero.avif 1248w"
-          sizes="100vw"
-        />
         <img
-          src="/hero.jpg"
+          src="/hero1.png"
           alt=""
           aria-hidden
           fetchPriority="high"
