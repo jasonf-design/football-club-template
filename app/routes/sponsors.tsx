@@ -175,12 +175,11 @@ export default function Sponsors({ loaderData }: Route.ComponentProps) {
 function FeaturedWithSpotlight({ item: s }: { item: Sponsor }) {
   const filename = s.logoFilename;
   const fallback = filename ? fallbackFormatFor(filename) : null;
+  const LogoTag = s.url ? "a" : "div";
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 border border-line">
-      <a
-        href={s.url ?? "#"}
-        target={s.url ? "_blank" : undefined}
-        rel={s.url ? "noreferrer" : undefined}
+      <LogoTag
+        {...(s.url ? { href: s.url, target: "_blank", rel: "noreferrer" } : {})}
         className="bg-paper aspect-[3/2] flex items-center justify-center p-8 hover:bg-paper-warm transition-colors"
       >
         {filename && fallback ? (
@@ -205,7 +204,7 @@ function FeaturedWithSpotlight({ item: s }: { item: Sponsor }) {
             {s.name.toUpperCase()}
           </div>
         )}
-      </a>
+      </LogoTag>
       <div className="border-t md:border-t-0 md:border-l border-line bg-paper-warm/30 p-8 md:p-10 flex flex-col justify-center">
         <div className="text-[10px] uppercase tracking-[0.28em] text-navy mb-3">
           Platinum Shirt Sponsor
@@ -251,12 +250,11 @@ function FeaturedGrid({ items }: { items: Sponsor[] }) {
         const filename = s.logoFilename;
         const fallback = filename ? fallbackFormatFor(filename) : null;
         const sizes = single ? "min(512px, 100vw)" : "(min-width: 640px) 50vw, 100vw";
+        const Tag = s.url ? "a" : "div";
         return (
-          <a
+          <Tag
             key={s.id}
-            href={s.url ?? "#"}
-            target={s.url ? "_blank" : undefined}
-            rel={s.url ? "noreferrer" : undefined}
+            {...(s.url ? { href: s.url, target: "_blank", rel: "noreferrer" } : {})}
             className={[
               "bg-paper aspect-[3/2] flex items-center justify-center p-8 hover:bg-paper-warm transition-colors",
               single ? "w-full" : "w-full sm:w-1/2 border-r border-b border-line",
@@ -284,7 +282,7 @@ function FeaturedGrid({ items }: { items: Sponsor[] }) {
                 {s.name.toUpperCase()}
               </div>
             )}
-          </a>
+          </Tag>
         );
       })}
     </div>
@@ -306,12 +304,11 @@ function SponsorCard({ sponsor: s }: { sponsor: Sponsor }) {
   const filename = s.logoFilename;
   const fallback = filename ? fallbackFormatFor(filename) : null;
   const sizes = "(min-width: 1024px) 15vw, (min-width: 640px) 22vw, 48vw";
+  const Tag = s.url ? "a" : "div";
 
   return (
-    <a
-      href={s.url ?? "#"}
-      target={s.url ? "_blank" : undefined}
-      rel={s.url ? "noreferrer" : undefined}
+    <Tag
+      {...(s.url ? { href: s.url, target: "_blank", rel: "noreferrer" } : {})}
       className={`${CARD_WIDTH} border-r border-b border-line bg-paper hover:bg-paper-warm transition-colors`}
     >
       {/* padding-top forces 3:2 logo area height cross-browser reliably */}
@@ -341,7 +338,7 @@ function SponsorCard({ sponsor: s }: { sponsor: Sponsor }) {
       <div className="border-t border-line px-2 py-1.5 text-center text-[9px] font-semibold tracking-[0.12em] text-navy/80 uppercase truncate">
         {s.name}
       </div>
-    </a>
+    </Tag>
   );
 }
 
