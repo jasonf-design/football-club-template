@@ -73,11 +73,13 @@ export function PitchGrid({
   config,
   stripeReady,
   error,
+  success,
 }: {
   squares: PitchSquare[];
   config: PitchGridConfig;
   stripeReady: boolean;
   error?: string | null;
+  success?: boolean;
 }) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [showForm, setShowForm] = useState(false);
@@ -226,77 +228,91 @@ export function PitchGrid({
 
       {/* Side panel */}
       <aside className="bg-paper border border-line p-6 lg:sticky lg:top-6">
-        <div className="text-[10px] uppercase tracking-[0.28em] text-mute mb-2">
-          Your selection
-        </div>
-        <div className="flex items-baseline gap-3">
-          <div className="scoreboard text-5xl text-navy leading-none">{selected.size}</div>
-          <div className="text-mute text-sm">{selected.size === 1 ? "square" : "squares"}</div>
-          <div className="ml-auto text-right">
-            <div className="scoreboard text-3xl text-navy leading-none">
-              £{(totalPence / 100).toLocaleString("en-GB")}
+        {success ? (
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-3">
+              Request received
             </div>
-            <div className="text-[10px] uppercase tracking-[0.22em] text-mute mt-1">Total</div>
-          </div>
-        </div>
-
-        {selected.size > 0 && (
-          <div className="mt-5 max-h-28 overflow-y-auto text-xs text-mute space-y-1 border-t border-line pt-4">
-            {[...selected]
-              .map((id) => byId.get(id))
-              .filter((x): x is PitchSquare => !!x)
-              .sort((a, b) => a.row - b.row || a.col - b.col)
-              .map((s) => (
-                <div key={s.id} className="flex justify-between gap-3">
-                  <span>R{s.row} · C{s.col}</span>
-                  <button type="button" onClick={() => toggle(s)}
-                    className="text-mute hover:text-red" aria-label="Remove">✕</button>
-                </div>
-              ))}
-          </div>
-        )}
-
-        {selected.size === 0 ? (
-          <p className="mt-6 text-sm text-mute leading-relaxed">
-            Click any available square on the virtual pitch to add it to your selection.
-            Pick as many as you like — each is £{(config.pricePence / 100).toFixed(0)}.
-          </p>
-        ) : !showForm ? (
-          <div className="mt-6 flex flex-col gap-2">
-            <button type="button" onClick={() => setShowForm(true)}
-              className="w-full bg-navy text-paper py-3 text-sm font-semibold tracking-[0.16em] uppercase hover:bg-navy-deep transition-colors">
-              Continue · £{(totalPence / 100).toLocaleString("en-GB")}
-            </button>
-            <button type="button" onClick={clearSelection}
-              className="text-xs uppercase tracking-[0.18em] text-mute hover:text-navy py-1">
-              Clear selection
-            </button>
+            <div className="font-serif text-2xl text-navy leading-snug">
+              Thanks — we&apos;ll be in touch.
+            </div>
+            <p className="mt-3 text-sm text-mute leading-relaxed">
+              We&apos;ve noted your interest in those squares. Someone from the club
+              will contact you to arrange payment.
+            </p>
           </div>
         ) : (
-          <Form method="post" className="mt-6 space-y-4">
-            <input type="hidden" name="squareIds" value={[...selected].join(",")} />
-            <CheckoutField name="displayName" label="Name to display"
-              hint="On the virtual pitch and in the programme" required maxLength={60} />
-            <CheckoutField name="email" label="Email" type="email"
-              hint="For your receipt" required />
-            <CheckoutField name="contactName" label="Your name" hint="Optional" />
-            {error && (
-              <div className="text-xs border-l-2 border-red bg-red/5 text-red px-3 py-2">{error}</div>
-            )}
-            {!stripeReady && (
-              <div className="text-[11px] border-l-2 border-cream/80 bg-cream/30 px-3 py-2 text-ink">
-                Stripe isn't configured yet — submitting will return an error.
+          <>
+            <div className="text-[10px] uppercase tracking-[0.28em] text-mute mb-2">
+              Your selection
+            </div>
+            <div className="flex items-baseline gap-3">
+              <div className="scoreboard text-5xl text-navy leading-none">{selected.size}</div>
+              <div className="text-mute text-sm">{selected.size === 1 ? "square" : "squares"}</div>
+              <div className="ml-auto text-right">
+                <div className="scoreboard text-3xl text-navy leading-none">
+                  £{(totalPence / 100).toLocaleString("en-GB")}
+                </div>
+                <div className="text-[10px] uppercase tracking-[0.22em] text-mute mt-1">Total</div>
+              </div>
+            </div>
+
+            {selected.size > 0 && (
+              <div className="mt-5 max-h-28 overflow-y-auto text-xs text-mute space-y-1 border-t border-line pt-4">
+                {[...selected]
+                  .map((id) => byId.get(id))
+                  .filter((x): x is PitchSquare => !!x)
+                  .sort((a, b) => a.row - b.row || a.col - b.col)
+                  .map((s) => (
+                    <div key={s.id} className="flex justify-between gap-3">
+                      <span>R{s.row} · C{s.col}</span>
+                      <button type="button" onClick={() => toggle(s)}
+                        className="text-mute hover:text-red" aria-label="Remove">✕</button>
+                    </div>
+                  ))}
               </div>
             )}
-            <button type="submit"
-              className="w-full bg-sky text-navy py-3 text-sm font-semibold tracking-[0.16em] uppercase hover:bg-navy hover:text-paper transition-colors">
-              Pay £{(totalPence / 100).toLocaleString("en-GB")} →
-            </button>
-            <button type="button" onClick={() => setShowForm(false)}
-              className="text-xs uppercase tracking-[0.18em] text-mute hover:text-navy w-full text-center">
-              ← Back to selection
-            </button>
-          </Form>
+
+            {selected.size === 0 ? (
+              <p className="mt-6 text-sm text-mute leading-relaxed">
+                Click any available square on the virtual pitch to add it to your selection.
+                Pick as many as you like — each is £{(config.pricePence / 100).toFixed(0)}.
+              </p>
+            ) : !showForm ? (
+              <div className="mt-6 flex flex-col gap-2">
+                <button type="button" onClick={() => setShowForm(true)}
+                  className="w-full bg-navy text-paper py-3 text-sm font-semibold tracking-[0.16em] uppercase hover:bg-navy-deep transition-colors">
+                  Continue · £{(totalPence / 100).toLocaleString("en-GB")}
+                </button>
+                <button type="button" onClick={clearSelection}
+                  className="text-xs uppercase tracking-[0.18em] text-mute hover:text-navy py-1">
+                  Clear selection
+                </button>
+              </div>
+            ) : (
+              <Form method="post" className="mt-6 space-y-4">
+                <input type="hidden" name="squareIds" value={[...selected].join(",")} />
+                <CheckoutField name="displayName" label="Name to display"
+                  hint="On the virtual pitch and in the programme" required maxLength={60} />
+                <CheckoutField name="email" label="Email" type="email"
+                  hint="We'll be in touch" required />
+                <CheckoutField name="contactName" label="Your name" hint="Optional" />
+                {error && (
+                  <div className="text-xs border-l-2 border-red bg-red/5 text-red px-3 py-2">{error}</div>
+                )}
+                <button type="submit"
+                  className="w-full bg-sky text-navy py-3 text-sm font-semibold tracking-[0.16em] uppercase hover:bg-navy hover:text-paper transition-colors">
+                  {stripeReady
+                    ? `Pay £${(totalPence / 100).toLocaleString("en-GB")} →`
+                    : "Register interest →"}
+                </button>
+                <button type="button" onClick={() => setShowForm(false)}
+                  className="text-xs uppercase tracking-[0.18em] text-mute hover:text-navy w-full text-center">
+                  ← Back to selection
+                </button>
+              </Form>
+            )}
+          </>
         )}
       </aside>
     </div>

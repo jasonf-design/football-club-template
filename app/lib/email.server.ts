@@ -103,3 +103,71 @@ function buildHtmlBody(msg: ContactNotification, adminUrl: string) {
   </p>
 </div>`;
 }
+
+export type PitchInterestNotification = {
+  name: string;
+  email: string;
+  displayName: string;
+  squareCount: number;
+  squareIds: number[];
+};
+
+export async function sendPitchInterestNotification(
+  msg: PitchInterestNotification,
+): Promise<NotificationResult> {
+  if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
+    return { sent: false, reason: "unconfigured" };
+  }
+  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const from = process.env.CONTACT_NOTIFY_FROM!;
+
+  const subjectLine = `Pitch square interest from ${msg.name} (${msg.squareCount} square${msg.squareCount === 1 ? "" : "s"})`;
+
+  const text = [
+    `Name: ${msg.name}`,
+    `Email: ${msg.email}`,
+    `Display name on pitch: ${msg.displayName}`,
+    `Squares requested: ${msg.squareCount}`,
+    `Square IDs: ${msg.squareIds.join(", ")}`,
+    "",
+    "Online payments are not set up yet — reply to this email to arrange payment with this supporter.",
+  ].join("\n");
+
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const html = `<div style="font-family:system-ui,sans-serif;color:#111;max-width:560px;line-height:1.5">
+  <h2 style="margin:0 0 20px;font-size:18px;color:#0a1628">New pitch sponsorship enquiry</h2>
+  <p style="margin:0 0 10px"><strong>Name:</strong> ${esc(msg.name)}</p>
+  <p style="margin:0 0 10px"><strong>Email:</strong> <a href="mailto:${esc(msg.email)}" style="color:#0066cc">${esc(msg.email)}</a></p>
+  <p style="margin:0 0 10px"><strong>Display name on pitch:</strong> ${esc(msg.displayName)}</p>
+  <p style="margin:0 0 10px"><strong>Squares requested:</strong> ${msg.squareCount}</p>
+  <p style="margin:0 0 20px"><strong>Square IDs:</strong> ${msg.squareIds.join(", ")}</p>
+  <div style="padding:14px 16px;background:#f0f7ff;border-left:3px solid #4a90d9;font-size:14px;color:#444">
+    Online payments are not yet set up — reply to this email to arrange payment with this supporter.
+  </div>
+</div>`;
+
+  try {
+    const { error } = await getResend().emails.send({
+      from,
+      to,
+      replyTo: msg.email,
+      subject: subjectLine,
+      text,
+      html,
+    });
+    if (error) {
+      console.error("[email] resend rejected:", error);
+      return { sent: false, reason: "error", error: String(error) };
+    }
+    return { sent: true };
+  } catch (err) {
+    console.error("[email] resend threw:", err);
+    return {
+      sent: false,
+      reason: "error",
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}

@@ -15,6 +15,7 @@ import {
   publicUrl,
   StripeNotConfiguredError,
 } from "~/lib/stripe.server";
+import { sendPitchInterestNotification } from "~/lib/email.server";
 
 export function meta(_: Route.MetaArgs) {
   return [
@@ -158,7 +159,7 @@ export async function action({ request }: Route.ActionArgs) {
     .where(inArray(pitchSquares.id, squareIds));
 
   if (!isStripeConfigured()) {
-    // Release the hold so the user can try again later.
+    // Release the hold — no payment taken yet.
     await db
       .update(pitchSquares)
       .set({ status: "available", orderId: null })
@@ -167,10 +168,15 @@ export async function action({ request }: Route.ActionArgs) {
       .update(pitchOrders)
       .set({ status: "cancelled" })
       .where(eq(pitchOrders.id, order.id));
-    return {
-      error:
-        "Online payments aren't enabled yet. Send us a note via the contact page and we'll reserve your squares manually.",
-    };
+    // Email the club so they can follow up manually.
+    await sendPitchInterestNotification({
+      name: contactName ?? displayName,
+      email,
+      displayName,
+      squareCount: squareIds.length,
+      squareIds,
+    });
+    return { ok: true as const };
   }
 
   try {
@@ -331,7 +337,8 @@ export default function Pitch({ loaderData }: Route.ComponentProps) {
             squares={squares}
             config={config}
             stripeReady={stripeReady}
-            error={result?.error}
+            error={"error" in (result ?? {}) ? (result as { error: string }).error : undefined}
+            success={result != null && "ok" in result && result.ok === true}
           />
         </Container>
       </div>
@@ -361,8 +368,9 @@ export default function Pitch({ loaderData }: Route.ComponentProps) {
                 family, your business).
               </Step>
               <Step n={3}>
-                Pay securely through Stripe. £
-                {(config.pricePence / 100).toFixed(0)} per virtual square.
+                {stripeReady
+                  ? `Pay securely through Stripe. £${(config.pricePence / 100).toFixed(0)} per virtual square.`
+                  : `Register your interest. We'll contact you to arrange payment — £${(config.pricePence / 100).toFixed(0)} per virtual square.`}
               </Step>
               <Step n={4}>
                 Your name lands on the virtual pitch map, the matchday programme and
