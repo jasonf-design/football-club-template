@@ -4,7 +4,6 @@ import type { Route } from "./+types/shop";
 import { db } from "~/db.server";
 import { media, products } from "../../db/schema";
 import { Container } from "~/components/Container";
-import { PageHeader } from "~/components/PageHeader";
 import {
   fallbackFormatFor,
   variantSrcset,
@@ -43,20 +42,43 @@ export default function Shop({ loaderData }: Route.ComponentProps) {
   const { products } = loaderData;
   return (
     <>
-      <PageHeader
-        eyebrow="Club shop"
-        title="Wear the badge."
-        lede="Shirts, scarves and the little things that make matchday matchday. Every purchase goes straight back into the club."
-      />
+      {/* Macron banner — image speaks for itself, no text overlay */}
+      <a
+        href="https://www.macronstorewakefield.co.uk/store/Doncaster-City-c201709522"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group block w-full"
+        aria-label="Shop Doncaster City kits and training wear on the official Macron store"
+      >
+        <img
+          src="/macron-banner.png"
+          alt="Macron Sports Hub Wakefield — Official Kit Supplier"
+          width={2400}
+          height={600}
+          className="w-full h-auto block"
+        />
+        <div className="bg-navy flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 sm:px-10 py-5">
+          <p className="text-paper font-serif text-xl">
+            Shop kits &amp; training wear at the official Macron store
+          </p>
+          <div className="shrink-0 flex items-center gap-2.5 bg-sky group-hover:bg-sky-bright transition-colors duration-200 text-navy font-semibold text-sm tracking-wide px-7 py-3.5 whitespace-nowrap">
+            Shop at Macron
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 8h10M9 4l4 4-4 4" />
+            </svg>
+          </div>
+        </div>
+      </a>
+
       <Container size="wide" className="py-16">
+        <h2 className="font-serif text-3xl text-navy mb-10">Club merchandise</h2>
         {products.length === 0 ? (
           <div className="border border-line bg-paper-warm/40 p-16 text-center">
             <div className="font-serif text-3xl text-navy">
-              Closed for kit drop.
+              More merch coming soon.
             </div>
             <p className="mt-3 text-mute max-w-md mx-auto">
-              First-season merch lands here soon. Get in touch if you'd like
-              an early heads-up.
+              Scarves, badges and more land here shortly. In the meantime, grab your kit from the Macron store above.
             </p>
           </div>
         ) : (
