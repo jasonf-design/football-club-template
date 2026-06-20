@@ -95,6 +95,12 @@ export async function action({ request, params }: Route.ActionArgs) {
     return { saved: "opposition" };
   }
 
+  if (intent === "opposition-lineup") {
+    await db.update(programmes).set({ oppositionLineup: String(form.get("oppositionLineup") ?? "").trim() || null })
+      .where(eq(programmes.id, params.id));
+    return { saved: "opposition-lineup" };
+  }
+
   if (intent === "featured-sponsor") {
     const featuredSponsorId = form.get("featuredSponsorId");
     await db.update(programmes).set({
@@ -311,6 +317,27 @@ export default function AdminProgrammesEdit({ loaderData }: Route.ComponentProps
                 className="w-full bg-paper border border-line focus:border-navy outline-none px-4 py-3 text-base text-ink resize-y"
               />
               <PrimaryButton type="submit">Save profile</PrimaryButton>
+            </Form>
+          </section>
+
+          {/* Opposition lineup */}
+          <section className="border border-line p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-2 w-2 rounded-full bg-line" />
+              <h2 className="text-[10px] uppercase tracking-[0.24em] text-mute">Opposition line-up (optional)</h2>
+            </div>
+            <SavedBanner intent="opposition-lineup" saved={saved ?? null} />
+            <p className="text-xs text-mute mb-3">Enter opposition players one per line, optionally prefixed with shirt number (e.g. "1 Joe Smith"). These appear on the back-page team sheet.</p>
+            <Form method="post" className="space-y-4">
+              <input type="hidden" name="intent" value="opposition-lineup" />
+              <textarea
+                name="oppositionLineup"
+                rows={18}
+                defaultValue={prog.oppositionLineup ?? ""}
+                placeholder={`1 Goalkeeper\n2 Right Back\n3 Left Back\n4 Centre Back\n5 Centre Back\n6 Midfielder\n7 Right Wing\n8 Midfielder\n9 Striker\n10 Attacking Mid\n11 Left Wing`}
+                className="w-full bg-paper border border-line focus:border-navy outline-none px-4 py-3 text-sm text-ink font-mono resize-y"
+              />
+              <PrimaryButton type="submit">Save line-up</PrimaryButton>
             </Form>
           </section>
 

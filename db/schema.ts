@@ -279,6 +279,7 @@ export const programmes = sqliteTable("programmes", {
   coverImageMediaId: text("cover_image_media_id").references(() => media.id, { onDelete: "set null" }),
   managersNotes: text("managers_notes"),
   oppositionProfile: text("opposition_profile"),
+  oppositionLineup: text("opposition_lineup"),
   featuredPlayerId: text("featured_player_id").references(() => players.id, { onDelete: "set null" }),
   featuredSponsorId: text("featured_sponsor_id").references(() => sponsors.id, { onDelete: "set null" }),
   coverSponsorId: text("cover_sponsor_id").references(() => sponsors.id, { onDelete: "set null" }),
