@@ -36,7 +36,7 @@ export async function sendContactNotification(
   if (!isResendConfigured()) {
     return { sent: false, reason: "unconfigured" };
   }
-  const to = process.env.CONTACT_NOTIFY_TO!;
+  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
   const from = process.env.CONTACT_NOTIFY_FROM!;
   const publicUrl = process.env.PUBLIC_URL ?? "";
   const adminUrl = publicUrl

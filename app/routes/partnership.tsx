@@ -27,6 +27,7 @@ export default function Partnership() {
     if (!iframe || !wrapper) return;
 
     let timer: ReturnType<typeof setTimeout>;
+    let lastH = 0;
 
     const applyScale = () => {
       try {
@@ -43,28 +44,37 @@ export default function Partnership() {
         iframe.style.height = `${contentH}px`;
         iframe.style.transform = scale < 1 ? `scale(${scale})` : "";
         iframe.style.transformOrigin = "top left";
-        setScaledHeight(contentH * scale);
+        setScaledHeight(Math.ceil(contentH * scale));
       } catch {
-        // cross-origin guard
+        // cross-origin guard (shouldn't happen — same origin)
       }
     };
 
-    const onLoad = () => {
-      // Poll until content settles then apply scale
-      let stable = 0;
-      let lastH = 0;
+    // Poll for up to 20s after load. The brochure HTML decodes 4MB of
+    // base64 assets asynchronously, so scrollHeight stabilises well after
+    // the iframe "load" event fires. Re-apply scale whenever height changes.
+    const startPolling = () => {
+      let ticks = 0;
+      const MAX_TICKS = 40; // 20 s at 500 ms intervals
+
       const poll = () => {
+        if (ticks++ >= MAX_TICKS) return;
         try {
-          const h = iframe.contentDocument?.documentElement?.scrollHeight ?? 0;
-          if (h === lastH) stable++;
-          else { stable = 0; lastH = h; }
-          if (stable >= 3) { applyScale(); return; }
-          timer = setTimeout(poll, 300);
-        } catch { applyScale(); }
+          const h =
+            iframe.contentDocument?.documentElement?.scrollHeight ?? 0;
+          if (h > 100 && h !== lastH) {
+            lastH = h;
+            applyScale();
+          }
+        } catch {
+          /* cross-origin */
+        }
+        timer = setTimeout(poll, 500);
       };
-      timer = setTimeout(poll, 200);
+      timer = setTimeout(poll, 300);
     };
 
+    const onLoad = () => startPolling();
     const onResize = () => applyScale();
 
     iframe.addEventListener("load", onLoad);
@@ -91,7 +101,11 @@ export default function Partnership() {
       )}
       <div
         ref={wrapperRef}
-        style={{ width: "100%", overflow: "hidden", height: scaledHeight ?? "100vh" }}
+        style={{
+          width: "100%",
+          overflow: "hidden",
+          height: scaledHeight ? `${scaledHeight}px` : "100svh",
+        }}
       >
         <iframe
           ref={iframeRef}
@@ -99,6 +113,17 @@ export default function Partnership() {
           title="Doncaster City FC 2026/27 Partnership Brochure"
           style={{ border: "none", display: "block" }}
         />
+      </div>
+      {/* Fallback link for when the brochure is still loading on slow connections */}
+      <div className="text-center py-4 text-xs text-mute">
+        <a
+          href="/partnership-brochure.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-navy"
+        >
+          Open brochure in full screen
+        </a>
       </div>
     </>
   );
