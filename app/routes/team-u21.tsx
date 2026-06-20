@@ -8,6 +8,12 @@ import { PageHeader } from "~/components/PageHeader";
 import { variantSrcset, variantUrl } from "~/lib/uploads";
 import { CoachingSection } from "~/components/CoachingSection";
 
+const PRESEASON_FIXTURES = [
+  { no: 1, month: "Jul", day: 31, year: 2026, dayName: "Fri", opponent: "Matlock Town U21s",       ha: "A", venue: "Venue TBC",                                                                        kickoff: "7:30PM" },
+  { no: 2, month: "Aug", day:  6, year: 2026, dayName: "Thu", opponent: "Penistone Church U21s",   ha: "A", venue: "Parker Roofing Memorial Ground, Church View Rd, Penistone, Sheffield S36 6AT",    kickoff: "7:30PM" },
+  { no: 3, month: "Aug", day: 12, year: 2026, dayName: "Wed", opponent: "Armthorpe Welfare U21s",  ha: "A", venue: "Marra Falcons Stadium, Church St, Armthorpe, Doncaster DN3 3AG",                  kickoff: "7:30PM" },
+];
+
 export function meta(_: Route.MetaArgs) {
   return [
     { title: "Under 23s · Doncaster City FC" },
@@ -106,6 +112,56 @@ export default function TeamU21({ loaderData }: Route.ComponentProps) {
             </div>
           </>
         )}
+        {/* Pre-season fixtures */}
+        <div className="mt-16 pt-12 border-t border-line">
+          <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-3">Pre-season 2026</div>
+          <h2 className="font-serif text-3xl text-navy mb-8">U21s Pre-Season Schedule 2026</h2>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-navy text-paper text-[10px] uppercase tracking-[0.18em]">
+                  <th className="px-4 py-3 text-left font-medium w-10">No.</th>
+                  <th className="px-4 py-3 text-left font-medium">Date</th>
+                  <th className="px-4 py-3 text-left font-medium hidden sm:table-cell">Day</th>
+                  <th className="px-4 py-3 text-left font-medium">Opponent &amp; Venue</th>
+                  <th className="px-4 py-3 text-right font-medium">KO</th>
+                </tr>
+              </thead>
+              <tbody>
+                {PRESEASON_FIXTURES.map((f, i) => (
+                  <tr
+                    key={f.no}
+                    className={[
+                      "border-b border-line transition-colors hover:bg-sky/5",
+                      i % 2 === 0 ? "bg-paper" : "bg-paper-warm/30",
+                    ].join(" ")}
+                  >
+                    <td className="px-4 py-3 scoreboard text-navy/40 text-base">{String(f.no).padStart(2, "0")}</td>
+                    <td className="px-4 py-3">
+                      <div className="text-[10px] uppercase tracking-[0.14em] text-mute">{f.month}</div>
+                      <div className="font-semibold text-navy leading-none">{f.day}</div>
+                      <div className="text-[10px] text-mute">{f.year}</div>
+                    </td>
+                    <td className="px-4 py-3 text-mute hidden sm:table-cell">{f.dayName}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-navy">{f.opponent}</span>
+                        <span className={[
+                          "text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-wide flex-shrink-0",
+                          f.ha === "H" ? "bg-navy text-paper" : f.ha === "A" ? "border border-line text-navy" : "bg-sky/20 text-navy",
+                        ].join(" ")}>{f.ha}</span>
+                      </div>
+                      <div className="text-[10px] text-mute mt-0.5">{f.venue}</div>
+                    </td>
+                    <td className="px-4 py-3 text-right text-mute tabular-nums whitespace-nowrap">{f.kickoff}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <CoachingSection staff={staff} />
       </Container>
     </>
