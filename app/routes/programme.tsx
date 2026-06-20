@@ -581,13 +581,24 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
                   {p.sponsor1Name ? (
                     <div className="mt-auto">
                       <div className="text-[8px] uppercase tracking-[0.16em] text-mute mb-1">Sponsored by</div>
-                      <div className="flex items-center gap-1.5 border border-line bg-paper-warm/30 px-2 py-1">
-                        {p.sponsor1LogoFilename && (
-                          <img src={variantUrl(p.sponsor1LogoFilename, 120, "jpeg")} alt={p.sponsor1Name}
-                            className="h-4 w-auto max-w-[32px] object-contain flex-shrink-0" />
-                        )}
-                        <span className="text-[9px] uppercase tracking-[0.12em] text-navy/70 font-semibold truncate">{p.sponsor1Name}</span>
-                      </div>
+                      {p.sponsor1Url ? (
+                        <a href={p.sponsor1Url} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 border border-line bg-paper-warm/30 px-2 py-1 hover:border-sky-deep/40 hover:bg-sky/5 transition-colors">
+                          {p.sponsor1LogoFilename && (
+                            <img src={variantUrl(p.sponsor1LogoFilename, 120, "jpeg")} alt={p.sponsor1Name}
+                              className="h-4 w-auto max-w-[32px] object-contain flex-shrink-0" />
+                          )}
+                          <span className="text-[9px] uppercase tracking-[0.12em] text-navy/70 font-semibold truncate">{p.sponsor1Name}</span>
+                        </a>
+                      ) : (
+                        <div className="flex items-center gap-1.5 border border-line bg-paper-warm/30 px-2 py-1">
+                          {p.sponsor1LogoFilename && (
+                            <img src={variantUrl(p.sponsor1LogoFilename, 120, "jpeg")} alt={p.sponsor1Name}
+                              className="h-4 w-auto max-w-[32px] object-contain flex-shrink-0" />
+                          )}
+                          <span className="text-[9px] uppercase tracking-[0.12em] text-navy/70 font-semibold truncate">{p.sponsor1Name}</span>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <a href={`/sponsor/${p.id}`} className="mt-auto block text-[8px] uppercase tracking-[0.16em] text-sky-deep border border-dashed border-sky-deep/30 px-2 py-1.5 text-center hover:bg-sky/5 transition-colors">
