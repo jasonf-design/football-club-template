@@ -75,7 +75,7 @@ export const pitchSponsors: PitchSponsor[] = [
   {
     id: "aay",
     name: "AAY",
-    tier: "silver",
+    tier: "gold",
     logo: "/sponsors/aay.avif",
     squares: [
       { row: 5, col: 6 },
