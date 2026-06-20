@@ -104,6 +104,69 @@ function buildHtmlBody(msg: ContactNotification, adminUrl: string) {
 </div>`;
 }
 
+export type DonationInterestNotification = {
+  name: string;
+  email: string;
+  amountPence: number;
+};
+
+export async function sendDonationInterestNotification(
+  msg: DonationInterestNotification,
+): Promise<NotificationResult> {
+  if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
+    return { sent: false, reason: "unconfigured" };
+  }
+  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const from = process.env.CONTACT_NOTIFY_FROM!;
+  const amount = `£${(msg.amountPence / 100).toFixed(2)}`;
+
+  const subjectLine = `Club donation interest from ${msg.name} (${amount})`;
+
+  const text = [
+    `Name: ${msg.name}`,
+    `Email: ${msg.email}`,
+    `Intended donation: ${amount}`,
+    "",
+    "Online payments are not set up yet — contact this supporter to arrange their donation.",
+  ].join("\n");
+
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const html = `<div style="font-family:system-ui,sans-serif;color:#111;max-width:560px;line-height:1.5">
+  <h2 style="margin:0 0 20px;font-size:18px;color:#0a1628">New club donation enquiry</h2>
+  <p style="margin:0 0 10px"><strong>Name:</strong> ${esc(msg.name)}</p>
+  <p style="margin:0 0 10px"><strong>Email:</strong> <a href="mailto:${esc(msg.email)}" style="color:#0066cc">${esc(msg.email)}</a></p>
+  <p style="margin:0 0 20px"><strong>Intended donation:</strong> ${amount}</p>
+  <div style="padding:14px 16px;background:#f0f7ff;border-left:3px solid #4a90d9;font-size:14px;color:#444">
+    Online payments are not yet set up — reply to this email to arrange the donation with this supporter.
+  </div>
+</div>`;
+
+  try {
+    const { error } = await getResend().emails.send({
+      from,
+      to,
+      replyTo: msg.email,
+      subject: subjectLine,
+      text,
+      html,
+    });
+    if (error) {
+      console.error("[email] resend rejected:", error);
+      return { sent: false, reason: "error", error: String(error) };
+    }
+    return { sent: true };
+  } catch (err) {
+    console.error("[email] resend threw:", err);
+    return {
+      sent: false,
+      reason: "error",
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 export type PlayerSponsorInterestNotification = {
   sponsorName: string;
   sponsorEmail: string;
