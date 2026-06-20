@@ -272,6 +272,28 @@ export const fwpSnapshots = sqliteTable("fwp_snapshots", {
     .$onUpdate(() => new Date()),
 });
 
+export const programmes = sqliteTable("programmes", {
+  id: id(),
+  fixtureId: text("fixture_id").references(() => fixtures.id, { onDelete: "set null" }),
+  status: text("status", { enum: ["draft", "published"] }).notNull().default("draft"),
+  coverImageMediaId: text("cover_image_media_id").references(() => media.id, { onDelete: "set null" }),
+  managersNotes: text("managers_notes"),
+  oppositionProfile: text("opposition_profile"),
+  featuredPlayerId: text("featured_player_id").references(() => players.id, { onDelete: "set null" }),
+  featuredSponsorId: text("featured_sponsor_id").references(() => sponsors.id, { onDelete: "set null" }),
+  coverSponsorId: text("cover_sponsor_id").references(() => sponsors.id, { onDelete: "set null" }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export const programmeInterest = sqliteTable("programme_interest", {
+  id: id(),
+  programmeId: text("programme_id").notNull().references(() => programmes.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  createdAt: createdAt(),
+});
+
 export const contactMessages = sqliteTable("contact_messages", {
   id: id(),
   name: text("name").notNull(),
@@ -295,3 +317,5 @@ export type Product = typeof products.$inferSelect;
 export type ShopOrder = typeof shopOrders.$inferSelect;
 export type Media = typeof media.$inferSelect;
 export type CoachingStaff = typeof coachingStaff.$inferSelect;
+export type Programme = typeof programmes.$inferSelect;
+export type ProgrammeInterest = typeof programmeInterest.$inferSelect;

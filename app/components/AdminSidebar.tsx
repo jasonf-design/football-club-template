@@ -6,6 +6,7 @@ type NavItem = { to: string; label: string; end?: boolean; adminOnly?: boolean }
 const NAV_TOP: NavItem[] = [
   { to: "/admin", label: "Dashboard", end: true },
   { to: "/admin/posts", label: "News & posts" },
+  { to: "/admin/programmes", label: "Programmes" },
 ];
 
 const NAV_BOTTOM: NavItem[] = [
