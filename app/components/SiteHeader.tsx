@@ -8,6 +8,13 @@ const TEAMS_NAV = [
   { to: "/team/under-18s", label: "Under 18s" },
 ];
 
+const MATCHDAY_NAV = [
+  { to: "/programmes", label: "Programmes" },
+  { to: null, label: "Tickets" },
+  { to: null, label: "Directions" },
+  { to: null, label: "Activities" },
+];
+
 const NAV_LEFT = [
   { to: "/news", label: "News" },
   { to: "/fixtures", label: "Fixtures" },
@@ -36,6 +43,7 @@ export function SiteHeader({
 }) {
   const location = useLocation();
   const isTeamsActive = location.pathname.startsWith("/team");
+  const isMatchdayActive = location.pathname.startsWith("/programmes");
 
   return (
     <header className="relative z-40">
@@ -161,6 +169,49 @@ export function SiteHeader({
               </div>
             </div>
 
+            {/* Matchday dropdown */}
+            <div className="relative group/matchday py-2">
+              <button
+                className={[
+                  "flex items-center gap-1 text-sm font-medium tracking-wide transition-colors",
+                  isMatchdayActive ? "text-navy" : "text-ink/70 hover:text-navy",
+                ].join(" ")}
+              >
+                Matchday
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 4l4 4 4-4" />
+                </svg>
+              </button>
+              {isMatchdayActive && (
+                <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-sky" />
+              )}
+              <div className="absolute left-0 top-full pt-1 w-44 opacity-0 pointer-events-none group-hover/matchday:opacity-100 group-hover/matchday:pointer-events-auto transition-opacity duration-150 z-50">
+                <div className="bg-paper border border-line shadow-lg py-1">
+                  {MATCHDAY_NAV.map(({ to, label }) =>
+                    to ? (
+                      <NavLink
+                        key={label}
+                        to={to}
+                        className={({ isActive }) =>
+                          [
+                            "block px-4 py-2.5 text-sm transition-colors",
+                            isActive ? "text-navy bg-sky/10" : "text-ink/80 hover:bg-line/40",
+                          ].join(" ")
+                        }
+                      >
+                        {label}
+                      </NavLink>
+                    ) : (
+                      <div key={label} className="flex items-center justify-between px-4 py-2.5 text-sm text-ink/30 select-none">
+                        {label}
+                        <span className="text-[9px] uppercase tracking-wide">Soon</span>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Right nav items */}
             {NAV_RIGHT.map((item) => (
               <NavLink
@@ -259,6 +310,34 @@ export function SiteHeader({
                     {item.label}
                   </NavLink>
                 ))}
+
+                {/* Matchday section in mobile */}
+                <div className="px-4 pt-3 pb-1 text-[9px] uppercase tracking-[0.24em] text-mute">
+                  Matchday
+                </div>
+                {MATCHDAY_NAV.map(({ to, label }) =>
+                  to ? (
+                    <NavLink
+                      key={label}
+                      to={to}
+                      className={({ isActive }) =>
+                        [
+                          "pl-7 pr-4 py-2 text-sm border-l-2",
+                          isActive
+                            ? "border-sky text-navy bg-sky-soft/30"
+                            : "border-transparent text-ink/80 hover:bg-line/40",
+                        ].join(" ")
+                      }
+                    >
+                      {label}
+                    </NavLink>
+                  ) : (
+                    <div key={label} className="pl-7 pr-4 py-2 text-sm text-ink/30 flex items-center justify-between">
+                      {label}
+                      <span className="text-[9px] uppercase tracking-wide">Soon</span>
+                    </div>
+                  )
+                )}
 
                 {NAV_RIGHT.map((item) => (
                   <NavLink
