@@ -38,11 +38,12 @@ export default function Partnership() {
         if (contentW < 100 || contentH < 100) return;
 
         const wrapperW = wrapper.clientWidth;
-        const scale = Math.min(1, wrapperW / contentW);
+        // Always scale to fill the full wrapper width — never leave blank space.
+        const scale = wrapperW / contentW;
 
         iframe.style.width = `${contentW}px`;
         iframe.style.height = `${contentH}px`;
-        iframe.style.transform = scale < 1 ? `scale(${scale})` : "";
+        iframe.style.transform = `scale(${scale})`;
         iframe.style.transformOrigin = "top left";
         setScaledHeight(Math.ceil(contentH * scale));
       } catch {
@@ -111,7 +112,8 @@ export default function Partnership() {
           ref={iframeRef}
           src="/partnership-brochure.html"
           title="Doncaster City FC 2026/27 Partnership Brochure"
-          style={{ border: "none", display: "block" }}
+          scrolling="no"
+          style={{ border: "none", display: "block", overflow: "hidden" }}
         />
       </div>
       {/* Fallback link for when the brochure is still loading on slow connections */}
