@@ -73,6 +73,16 @@ export const pitchSponsors: PitchSponsor[] = [
 
   // ── Silver ────────────────────────────────────────────────────────────────
   {
+    id: "aay",
+    name: "AAY",
+    tier: "silver",
+    logo: "/sponsors/aay.avif",
+    squares: [
+      { row: 5, col: 6 },
+      { row: 6, col: 6 },
+    ],
+  },
+  {
     id: "alt-rubber",
     name: "Alt Rubber and Plastics",
     tier: "silver",
