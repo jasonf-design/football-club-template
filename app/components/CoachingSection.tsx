@@ -23,7 +23,7 @@ export function CoachingSection({ staff }: { staff: StaffMember[] }) {
             <div className="h-24 w-24 rounded-full overflow-hidden flex-shrink-0">
               {s.photoFilename ? (
                 <img
-                  src={variantUrl(s.photoFilename, 200, "jpeg")}
+                  src={variantUrl(s.photoFilename, 240, "jpeg")}
                   alt={s.name}
                   loading="lazy"
                   decoding="async"
