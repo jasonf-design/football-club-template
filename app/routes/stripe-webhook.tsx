@@ -167,8 +167,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       })
       .where(eq(shopOrders.id, order.id));
 
-    type LineItem = { name: string; qty: number; pricePence: number; productId: string; slug: string };
-    const lineItems = (order.lineItemsJson as LineItem[] | null) ?? [];
     sendShopOrderPaidNotification({
       email: order.email,
       totalPence: order.totalPence,
