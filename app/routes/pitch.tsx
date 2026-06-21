@@ -346,58 +346,7 @@ export default function Pitch({ loaderData }: Route.ComponentProps) {
       {/* Supporters wall */}
       <SupportersWall supporters={supporters} commercialSponsors={commercialSponsors} />
 
-      {/* How it works */}
-      <section className="bg-paper-warm border-y border-line">
-        <Container size="wide" className="py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-3">
-                How it works
-              </div>
-              <h2 className="font-serif text-3xl text-navy leading-tight">
-                Four steps. Done in two minutes.
-              </h2>
-            </div>
-            <ol className="space-y-4 text-ink">
-              <Step n={1}>
-                Tap any available square on the virtual pitch above. Pick as many as
-                you like.
-              </Step>
-              <Step n={2}>
-                Enter the name you'd like to appear on the pitch (you, your
-                family, your business).
-              </Step>
-              <Step n={3}>
-                {stripeReady
-                  ? `Pay securely through Stripe. £${(config.pricePence / 100).toFixed(0)} per virtual square.`
-                  : `Register your interest. We'll contact you to arrange payment — £${(config.pricePence / 100).toFixed(0)} per virtual square.`}
-              </Step>
-              <Step n={4}>
-                Your name lands on the virtual pitch map, the matchday programme and
-                the Supporters Wall — all season long.
-              </Step>
-            </ol>
-          </div>
-        </Container>
-      </section>
     </>
-  );
-}
-
-function Step({
-  n,
-  children,
-}: {
-  n: number;
-  children: React.ReactNode;
-}) {
-  return (
-    <li className="flex gap-4">
-      <span className="scoreboard text-2xl text-sky leading-none">
-        {String(n).padStart(2, "0")}
-      </span>
-      <span className="pt-1">{children}</span>
-    </li>
   );
 }
 

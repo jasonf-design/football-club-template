@@ -274,10 +274,19 @@ export function PitchGrid({
             )}
 
             {selected.size === 0 ? (
-              <p className="mt-6 text-sm text-mute leading-relaxed">
-                Click any available square on the virtual pitch to add it to your selection.
-                Pick as many as you like — each is £{(config.pricePence / 100).toFixed(0)}.
-              </p>
+              <ol className="mt-6 space-y-4">
+                {[
+                  "Tap any available square on the pitch. Pick as many as you like.",
+                  "Enter the name you'd like to display — you, your family, or your business.",
+                  `Pay securely. £${(config.pricePence / 100).toFixed(0)} per square.`,
+                  "Your name appears on the virtual pitch, in the matchday programme, and on the Supporters Wall — all season.",
+                ].map((text, i) => (
+                  <li key={i} className="flex gap-3 text-sm">
+                    <span className="scoreboard text-lg text-sky leading-none shrink-0 w-6 text-right">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="text-mute leading-snug pt-0.5">{text}</span>
+                  </li>
+                ))}
+              </ol>
             ) : !showForm ? (
               <div className="mt-6 flex flex-col gap-2">
                 <button type="button" onClick={() => setShowForm(true)}

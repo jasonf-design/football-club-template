@@ -17,7 +17,7 @@ export const pitchSponsors: PitchSponsor[] = [
     id: "smile-thai-massage",
     name: "Smile Thai Massage",
     tier: "platinum",
-    logo: "/sponsors/smile-thai-massage.jpg",
+    logo: "/sponsors/smile-thai-massage.avif",
     website: "https://www.smilethaimassage.co.uk",
     squares: [
       { row: 5, col: 7 },
@@ -41,7 +41,7 @@ export const pitchSponsors: PitchSponsor[] = [
     id: "smokeys",
     name: "Smokeys",
     tier: "gold",
-    logo: "/sponsors/smokeys.png",
+    logo: "/sponsors/smokeys.avif",
     website: "https://smokeys.online/",
     squares: [
       { row: 2, col: 11 },
@@ -52,7 +52,7 @@ export const pitchSponsors: PitchSponsor[] = [
     id: "green-electrical",
     name: "Green Electrical & Plumbing Supplies",
     tier: "gold",
-    logo: "/sponsors/green-electrical.png",
+    logo: "/sponsors/green-electrical.avif",
     website: "https://www.green.supplies/",
     squares: [
       { row: 9, col: 4 },
@@ -63,7 +63,7 @@ export const pitchSponsors: PitchSponsor[] = [
     id: "visit-bawtry",
     name: "Visit Bawtry",
     tier: "gold",
-    logo: "/sponsors/visit-bawtry.png",
+    logo: "/sponsors/visit-bawtry.avif",
     website: "https://www.visitbawtry.com/",
     squares: [
       { row: 9, col: 11 },
@@ -87,7 +87,7 @@ export const pitchSponsors: PitchSponsor[] = [
     id: "alt-rubber",
     name: "Alt Rubber and Plastics",
     tier: "silver",
-    logo: "/sponsors/alt-rubber.png",
+    logo: "/sponsors/alt-rubber.avif",
     website: "https://www.altrubberplastics.co.uk/",
     squares: [{ row: 5, col: 2 }],
   },
@@ -95,7 +95,7 @@ export const pitchSponsors: PitchSponsor[] = [
     id: "eland-cables",
     name: "Eland Cables",
     tier: "silver",
-    logo: "/sponsors/eland-cables.png",
+    logo: "/sponsors/eland-cables.avif",
     website: "https://www.elandcables.com/",
     squares: [{ row: 6, col: 14 }],
   },

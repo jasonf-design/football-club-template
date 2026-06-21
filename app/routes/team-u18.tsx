@@ -65,39 +65,8 @@ export default function TeamU18({ loaderData }: Route.ComponentProps) {
       />
 
       <Container size="wide" className="py-16">
-        {/* Club badge + about */}
-        <div className="flex flex-col md:flex-row gap-12 items-start max-w-4xl">
-          <div className="flex-shrink-0 flex justify-center md:justify-start">
-            <div className="bg-navy/5 border border-line p-10 inline-flex">
-              <Crest className="h-40 w-40 text-navy" />
-            </div>
-          </div>
-          <div className="flex-1">
-            <div className="text-[10px] uppercase tracking-[0.28em] text-mute mb-3">About the team</div>
-            <p className="text-ink leading-relaxed text-base">
-              Doncaster City FC Under 18s compete in local youth football, giving young players in the Doncaster area a
-              pathway to develop their game in line with the club's values — discipline, respect, and a love for the
-              beautiful game.
-            </p>
-            <p className="text-ink leading-relaxed text-base mt-4">
-              In line with our safeguarding commitments, we do not publish player names or images for our Under 18s
-              squad. Parents or guardians wishing to find out more are welcome to get in touch via the contact page.
-            </p>
-            <div className="mt-6">
-              <a
-                href="/contact"
-                className="inline-flex items-center gap-2 bg-navy text-paper px-5 py-2.5 text-sm font-semibold tracking-wide uppercase hover:bg-navy-deep transition-colors"
-              >
-                Get in touch
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <CoachingSection staff={staff} />
-
         {/* Pre-season schedule */}
-        <div className="mt-16 pt-12 border-t border-line">
+        <div className="mb-16 pb-12 border-b border-line">
           <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-3">Pre-season 2026</div>
           <h2 className="font-serif text-3xl text-navy mb-8">U18s Pre-Season Schedule 2026</h2>
 
@@ -148,6 +117,37 @@ export default function TeamU18({ loaderData }: Route.ComponentProps) {
             </div>
           </div>
         </div>
+
+        {/* Club badge + about */}
+        <div className="flex flex-col md:flex-row gap-12 items-start max-w-4xl">
+          <div className="flex-shrink-0 flex justify-center md:justify-start">
+            <div className="bg-navy/5 border border-line p-10 inline-flex">
+              <Crest className="h-40 w-40 text-navy" />
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="text-[10px] uppercase tracking-[0.28em] text-mute mb-3">About the team</div>
+            <p className="text-ink leading-relaxed text-base">
+              Doncaster City FC Under 18s compete in local youth football, giving young players in the Doncaster area a
+              pathway to develop their game in line with the club's values — discipline, respect, and a love for the
+              beautiful game.
+            </p>
+            <p className="text-ink leading-relaxed text-base mt-4">
+              In line with our safeguarding commitments, we do not publish player names or images for our Under 18s
+              squad. Parents or guardians wishing to find out more are welcome to get in touch via the contact page.
+            </p>
+            <div className="mt-6">
+              <a
+                href="/contact"
+                className="inline-flex items-center gap-2 bg-navy text-paper px-5 py-2.5 text-sm font-semibold tracking-wide uppercase hover:bg-navy-deep transition-colors"
+              >
+                Get in touch
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <CoachingSection staff={staff} />
 
         {/* Fixtures placeholder */}
         <div className="mt-12 pt-12 border-t border-line">

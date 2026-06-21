@@ -20,8 +20,10 @@ export default function Partnership() {
   const submitted = params.get("submitted") === "1";
   const error = params.get("error") === "1";
   const [scaledHeight, setScaledHeight] = useState<number | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    if (!loaded) return;
     const iframe = iframeRef.current;
     const wrapper = wrapperRef.current;
     if (!iframe || !wrapper) return;
@@ -38,7 +40,6 @@ export default function Partnership() {
         if (contentW < 100 || contentH < 100) return;
 
         const wrapperW = wrapper.clientWidth;
-        // Always scale to fill the full wrapper width — never leave blank space.
         const scale = wrapperW / contentW;
 
         iframe.style.width = `${contentW}px`;
@@ -47,29 +48,19 @@ export default function Partnership() {
         iframe.style.transformOrigin = "top left";
         setScaledHeight(Math.ceil(contentH * scale));
       } catch {
-        // cross-origin guard (shouldn't happen — same origin)
+        // cross-origin guard
       }
     };
 
-    // Poll for up to 20s after load. The brochure HTML decodes 4MB of
-    // base64 assets asynchronously, so scrollHeight stabilises well after
-    // the iframe "load" event fires. Re-apply scale whenever height changes.
     const startPolling = () => {
       let ticks = 0;
-      const MAX_TICKS = 40; // 20 s at 500 ms intervals
-
+      const MAX_TICKS = 40;
       const poll = () => {
         if (ticks++ >= MAX_TICKS) return;
         try {
-          const h =
-            iframe.contentDocument?.documentElement?.scrollHeight ?? 0;
-          if (h > 100 && h !== lastH) {
-            lastH = h;
-            applyScale();
-          }
-        } catch {
-          /* cross-origin */
-        }
+          const h = iframe.contentDocument?.documentElement?.scrollHeight ?? 0;
+          if (h > 100 && h !== lastH) { lastH = h; applyScale(); }
+        } catch { /* cross-origin */ }
         timer = setTimeout(poll, 500);
       };
       timer = setTimeout(poll, 300);
@@ -86,7 +77,7 @@ export default function Partnership() {
       iframe.removeEventListener("load", onLoad);
       window.removeEventListener("resize", onResize);
     };
-  }, []);
+  }, [loaded]);
 
   return (
     <>
@@ -100,33 +91,66 @@ export default function Partnership() {
           Something went wrong — please check your details and try again.
         </div>
       )}
-      <div
-        ref={wrapperRef}
-        style={{
-          width: "100%",
-          overflow: "hidden",
-          height: scaledHeight ? `${scaledHeight}px` : "100svh",
-        }}
-      >
-        <iframe
-          ref={iframeRef}
-          src="/partnership-brochure.html"
-          title="Doncaster City FC 2026/27 Partnership Brochure"
-          scrolling="no"
-          style={{ border: "none", display: "block", overflow: "hidden" }}
-        />
-      </div>
-      {/* Fallback link for when the brochure is still loading on slow connections */}
-      <div className="text-center py-4 text-xs text-mute">
-        <a
-          href="/partnership-brochure.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-navy"
-        >
-          Open brochure in full screen
-        </a>
-      </div>
+
+      {!loaded ? (
+        <div className="flex flex-col items-center justify-center min-h-[70svh] gap-8 px-6 text-center bg-paper-warm/40">
+          <svg width="120" height="120" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect width="240" height="240" fill="#0c2a4f" rx="8" />
+            <circle cx="120" cy="120" r="60" fill="none" stroke="#67B7FF" strokeWidth="6" />
+            <text x="120" y="135" fontFamily="Oswald, Arial, sans-serif" fontSize="48" fontWeight="700" fill="#fff" textAnchor="middle">DC</text>
+            <text x="120" y="200" fontFamily="Oswald, Arial, sans-serif" fontSize="14" fontWeight="600" letterSpacing="3" fill="#67B7FF" textAnchor="middle">PARTNERSHIPS</text>
+          </svg>
+          <div>
+            <div className="font-serif text-3xl text-navy mb-2">2026/27 Partnership Brochure</div>
+            <p className="text-mute text-sm mb-6 max-w-xs mx-auto">View our full commercial partnership options and sponsorship packages.</p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => setLoaded(true)}
+                className="bg-navy text-paper px-8 py-3.5 font-semibold text-sm tracking-wide uppercase hover:bg-navy-deep transition-colors"
+              >
+                View brochure
+              </button>
+              <a
+                href="/partnership-brochure.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border border-navy text-navy px-8 py-3.5 font-semibold text-sm tracking-wide uppercase hover:bg-navy/5 transition-colors"
+              >
+                Open full screen
+              </a>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div
+            ref={wrapperRef}
+            style={{
+              width: "100%",
+              overflow: "hidden",
+              height: scaledHeight ? `${scaledHeight}px` : "100svh",
+            }}
+          >
+            <iframe
+              ref={iframeRef}
+              src="/partnership-brochure.html"
+              title="Doncaster City FC 2026/27 Partnership Brochure"
+              scrolling="no"
+              style={{ border: "none", display: "block", overflow: "hidden" }}
+            />
+          </div>
+          <div className="text-center py-4 text-xs text-mute">
+            <a
+              href="/partnership-brochure.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-navy"
+            >
+              Open brochure in full screen
+            </a>
+          </div>
+        </>
+      )}
     </>
   );
 }

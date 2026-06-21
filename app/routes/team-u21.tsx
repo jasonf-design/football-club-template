@@ -95,25 +95,8 @@ export default function TeamU21({ loaderData }: Route.ComponentProps) {
         lede="The squad developing through the Doncaster City system. Tomorrow's first team, playing today."
       />
       <Container size="wide" className="py-16">
-        {squad.length === 0 ? (
-          <div className="border border-line bg-paper-warm/40 p-16 text-center">
-            <div className="font-serif text-3xl text-navy">
-              Squad announcement coming soon.
-            </div>
-            <p className="mt-3 text-mute max-w-md mx-auto">
-              Once the Under 23s squad is finalised, every player will be introduced here.
-            </p>
-          </div>
-        ) : (
-          <>
-            <h2 className="sr-only">Players</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
-              {squad.map((p) => <PlayerCard key={p.id} player={p} />)}
-            </div>
-          </>
-        )}
         {/* Pre-season fixtures */}
-        <div className="mt-16 pt-12 border-t border-line">
+        <div className="mb-16 pb-12 border-b border-line">
           <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-3">Pre-season 2026</div>
           <h2 className="font-serif text-3xl text-navy mb-8">U21s Pre-Season Schedule 2026</h2>
 
@@ -161,6 +144,24 @@ export default function TeamU21({ loaderData }: Route.ComponentProps) {
             </table>
           </div>
         </div>
+
+        {squad.length === 0 ? (
+          <div className="border border-line bg-paper-warm/40 p-16 text-center">
+            <div className="font-serif text-3xl text-navy">
+              Squad announcement coming soon.
+            </div>
+            <p className="mt-3 text-mute max-w-md mx-auto">
+              Once the Under 23s squad is finalised, every player will be introduced here.
+            </p>
+          </div>
+        ) : (
+          <>
+            <h2 className="sr-only">Players</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
+              {squad.map((p) => <PlayerCard key={p.id} player={p} />)}
+            </div>
+          </>
+        )}
 
         <CoachingSection staff={staff} />
       </Container>

@@ -26,7 +26,7 @@ export function SiteFooter() {
             <div className="mt-6">
               <FooterTitle>Raise free donations</FooterTitle>
               <a
-                href="https://www.easyfundraising.org.uk/causes/doncastercityfc"
+                href="https://www.easyfundraising.org.uk/causes/doncaster-city-fc/"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-block hover:opacity-80 transition-opacity"

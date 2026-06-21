@@ -1,4 +1,5 @@
 import { NavLink, Link, useLocation } from "react-router";
+import { useState, useRef, useEffect } from "react";
 import { Crest } from "./Crest";
 import { CartIcon } from "./CartIcon";
 
@@ -30,6 +31,60 @@ const NAV_RIGHT = [
 ];
 
 const NAV_MOBILE = [...NAV_LEFT, ...NAV_RIGHT];
+
+function NavDropdown({
+  label,
+  isActive,
+  children,
+}: {
+  label: string;
+  isActive: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative py-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={[
+          "flex items-center gap-1 text-sm font-medium tracking-wide transition-colors",
+          isActive || open ? "text-navy" : "text-ink/70 hover:text-navy",
+        ].join(" ")}
+      >
+        {label}
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 4l4 4 4-4" />
+        </svg>
+      </button>
+      {isActive && (
+        <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-sky" />
+      )}
+      {open && (
+        <div
+          className="absolute left-0 top-full pt-1 w-44 z-50"
+          onClick={() => setOpen(false)}
+        >
+          <div className="bg-paper border border-line shadow-lg py-1">
+            {children}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function SiteHeader({
   nextFixture,
@@ -131,86 +186,48 @@ export function SiteHeader({
             ))}
 
             {/* Teams dropdown */}
-            <div className="relative group/teams py-2">
-              <button
-                className={[
-                  "flex items-center gap-1 text-sm font-medium tracking-wide transition-colors",
-                  isTeamsActive ? "text-navy" : "text-ink/70 hover:text-navy",
-                ].join(" ")}
-              >
-                Teams
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M2 4l4 4 4-4" />
-                </svg>
-              </button>
-              {isTeamsActive && (
-                <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-sky" />
-              )}
-              <div className="absolute left-0 top-full pt-1 w-40 opacity-0 pointer-events-none group-hover/teams:opacity-100 group-hover/teams:pointer-events-auto transition-opacity duration-150 z-50">
-                <div className="bg-paper border border-line shadow-lg py-1">
-                  {TEAMS_NAV.map(({ to, label }) => (
-                    <NavLink
-                      key={to}
-                      to={to}
-                      end
-                      className={({ isActive }) =>
-                        [
-                          "block px-4 py-2.5 text-sm transition-colors",
-                          isActive
-                            ? "text-navy bg-sky/10"
-                            : "text-ink/80 hover:bg-line/40",
-                        ].join(" ")
-                      }
-                    >
-                      {label}
-                    </NavLink>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <NavDropdown label="Teams" isActive={isTeamsActive}>
+              {TEAMS_NAV.map(({ to, label }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end
+                  className={({ isActive }) =>
+                    [
+                      "block px-4 py-2.5 text-sm transition-colors",
+                      isActive ? "text-navy bg-sky/10" : "text-ink/80 hover:bg-line/40",
+                    ].join(" ")
+                  }
+                >
+                  {label}
+                </NavLink>
+              ))}
+            </NavDropdown>
 
             {/* Matchday dropdown */}
-            <div className="relative group/matchday py-2">
-              <button
-                className={[
-                  "flex items-center gap-1 text-sm font-medium tracking-wide transition-colors",
-                  isMatchdayActive ? "text-navy" : "text-ink/70 hover:text-navy",
-                ].join(" ")}
-              >
-                Matchday
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M2 4l4 4 4-4" />
-                </svg>
-              </button>
-              {isMatchdayActive && (
-                <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-sky" />
+            <NavDropdown label="Matchday" isActive={isMatchdayActive}>
+              {MATCHDAY_NAV.map(({ to, label }) =>
+                to ? (
+                  <NavLink
+                    key={label}
+                    to={to}
+                    className={({ isActive }) =>
+                      [
+                        "block px-4 py-2.5 text-sm transition-colors",
+                        isActive ? "text-navy bg-sky/10" : "text-ink/80 hover:bg-line/40",
+                      ].join(" ")
+                    }
+                  >
+                    {label}
+                  </NavLink>
+                ) : (
+                  <div key={label} className="flex items-center justify-between px-4 py-2.5 text-sm text-ink/30 select-none">
+                    {label}
+                    <span className="text-[9px] uppercase tracking-wide">Soon</span>
+                  </div>
+                )
               )}
-              <div className="absolute left-0 top-full pt-1 w-44 opacity-0 pointer-events-none group-hover/matchday:opacity-100 group-hover/matchday:pointer-events-auto transition-opacity duration-150 z-50">
-                <div className="bg-paper border border-line shadow-lg py-1">
-                  {MATCHDAY_NAV.map(({ to, label }) =>
-                    to ? (
-                      <NavLink
-                        key={label}
-                        to={to}
-                        className={({ isActive }) =>
-                          [
-                            "block px-4 py-2.5 text-sm transition-colors",
-                            isActive ? "text-navy bg-sky/10" : "text-ink/80 hover:bg-line/40",
-                          ].join(" ")
-                        }
-                      >
-                        {label}
-                      </NavLink>
-                    ) : (
-                      <div key={label} className="flex items-center justify-between px-4 py-2.5 text-sm text-ink/30 select-none">
-                        {label}
-                        <span className="text-[9px] uppercase tracking-wide">Soon</span>
-                      </div>
-                    )
-                  )}
-                </div>
-              </div>
-            </div>
+            </NavDropdown>
 
             {/* Right nav items */}
             {NAV_RIGHT.map((item) => (

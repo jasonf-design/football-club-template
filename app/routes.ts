@@ -41,7 +41,7 @@ export default [
   route("uploads/:filename", "routes/serve-upload.tsx"),
 
   // Stripe webhook — public, no layout, no auth (signature verified)
-  route("api/stripe/webhook", "routes/stripe-webhook.tsx"),
+  route("api/stripe-webhook", "routes/stripe-webhook.tsx"),
 
   // Admin CMS
   ...prefix("admin", [
