@@ -104,6 +104,40 @@ function buildHtmlBody(msg: ContactNotification, adminUrl: string) {
 </div>`;
 }
 
+export type PlayerSponsorPaidNotification = {
+  playerName: string;
+  amountPence: number;
+};
+
+export async function sendPlayerSponsorPaidNotification(
+  msg: PlayerSponsorPaidNotification,
+): Promise<NotificationResult> {
+  if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
+    return { sent: false, reason: "unconfigured" };
+  }
+  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const from = process.env.CONTACT_NOTIFY_FROM!;
+  const amount = `£${(msg.amountPence / 100).toFixed(2)}`;
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const subjectLine = `✅ Player sponsorship paid — ${msg.playerName} (${amount})`;
+  const text = `Payment of ${amount} received for player sponsorship of ${msg.playerName}.`;
+  const html = `<div style="font-family:system-ui,sans-serif;color:#111;max-width:560px;line-height:1.5">
+  <h2 style="margin:0 0 4px;font-size:18px;color:#0a1628">✅ Player sponsorship payment received</h2>
+  <p style="margin:0 0 20px;color:#555;font-size:14px">Payment confirmed via Stripe</p>
+  <p style="margin:0 0 10px"><strong>Player:</strong> ${esc(msg.playerName)}</p>
+  <p style="margin:0 0 20px"><strong>Amount paid:</strong> ${amount}</p>
+  <p style="color:#555;font-size:14px">Update the player's sponsor details in the admin panel.</p>
+</div>`;
+  try {
+    const { error } = await getResend().emails.send({ from, to, subject: subjectLine, text, html });
+    if (error) { console.error("[email] resend rejected:", error); return { sent: false, reason: "error", error: String(error) }; }
+    return { sent: true };
+  } catch (err) {
+    console.error("[email] resend threw:", err);
+    return { sent: false, reason: "error", error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 export type DonationPaidNotification = {
   amountPence: number;
 };
