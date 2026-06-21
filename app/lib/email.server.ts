@@ -191,7 +191,7 @@ export async function sendPlayerSponsorInterestNotification(
     `Player: ${msg.playerName}`,
     `Amount: £${(msg.pricePence / 100).toFixed(2)}`,
     "",
-    "Online payments are not set up yet — reply to this email to arrange payment with this supporter.",
+    "Reply to this email to follow up with the supporter.",
   ].join("\n");
 
   const esc = (s: string) =>
@@ -204,7 +204,7 @@ export async function sendPlayerSponsorInterestNotification(
   <p style="margin:0 0 10px"><strong>Player:</strong> ${esc(msg.playerName)}</p>
   <p style="margin:0 0 20px"><strong>Amount:</strong> £${(msg.pricePence / 100).toFixed(2)}</p>
   <div style="padding:14px 16px;background:#f0f7ff;border-left:3px solid #4a90d9;font-size:14px;color:#444">
-    Online payments are not yet set up — reply to this email to arrange payment with this supporter.
+    Reply to this email to follow up with the supporter.
   </div>
 </div>`;
 
@@ -297,7 +297,7 @@ export async function sendPitchInterestNotification(
     `Squares requested: ${msg.squareCount}`,
     `Square IDs: ${msg.squareIds.join(", ")}`,
     "",
-    "Online payments are not set up yet — reply to this email to arrange payment with this supporter.",
+    "They have been sent to Stripe Checkout — payment will be confirmed automatically.",
   ].join("\n");
 
   const esc = (s: string) =>
@@ -311,7 +311,7 @@ export async function sendPitchInterestNotification(
   <p style="margin:0 0 10px"><strong>Squares requested:</strong> ${msg.squareCount}</p>
   <p style="margin:0 0 20px"><strong>Square IDs:</strong> ${msg.squareIds.join(", ")}</p>
   <div style="padding:14px 16px;background:#f0f7ff;border-left:3px solid #4a90d9;font-size:14px;color:#444">
-    Online payments are not yet set up — reply to this email to arrange payment with this supporter.
+    They have been sent to Stripe Checkout — you will receive a separate confirmation email once payment is complete.
   </div>
 </div>`;
 
@@ -336,5 +336,134 @@ export async function sendPitchInterestNotification(
       reason: "error",
       error: err instanceof Error ? err.message : String(err),
     };
+  }
+}
+
+export type PitchOrderPaidNotification = {
+  name: string;
+  email: string;
+  displayName: string;
+  squareCount: number;
+  totalPence: number;
+  orderId: string;
+};
+
+export async function sendPitchOrderPaidNotification(
+  msg: PitchOrderPaidNotification,
+): Promise<NotificationResult> {
+  if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
+    return { sent: false, reason: "unconfigured" };
+  }
+  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const from = process.env.CONTACT_NOTIFY_FROM!;
+  const publicUrl = process.env.PUBLIC_URL ?? "";
+  const adminUrl = `${publicUrl.replace(/\/$/, "")}/admin/pitch`;
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const amount = `£${(msg.totalPence / 100).toFixed(2)}`;
+  const subjectLine = `✅ Pitch square payment received — ${msg.displayName} (${amount})`;
+
+  const text = [
+    `Payment confirmed for pitch sponsorship.`,
+    ``,
+    `Name: ${msg.name}`,
+    `Email: ${msg.email}`,
+    `Display name on pitch: ${msg.displayName}`,
+    `Squares: ${msg.squareCount}`,
+    `Amount paid: ${amount}`,
+    `Order ID: ${msg.orderId}`,
+    ``,
+    `View in admin: ${adminUrl}`,
+  ].join("\n");
+
+  const html = `<div style="font-family:system-ui,sans-serif;color:#111;max-width:560px;line-height:1.5">
+  <h2 style="margin:0 0 4px;font-size:18px;color:#0a1628">✅ Pitch square payment received</h2>
+  <p style="margin:0 0 20px;color:#555;font-size:14px">Payment confirmed via Stripe</p>
+  <p style="margin:0 0 10px"><strong>Name:</strong> ${esc(msg.name)}</p>
+  <p style="margin:0 0 10px"><strong>Email:</strong> <a href="mailto:${esc(msg.email)}" style="color:#0066cc">${esc(msg.email)}</a></p>
+  <p style="margin:0 0 10px"><strong>Display name on pitch:</strong> ${esc(msg.displayName)}</p>
+  <p style="margin:0 0 10px"><strong>Squares:</strong> ${msg.squareCount}</p>
+  <p style="margin:0 0 20px"><strong>Amount paid:</strong> ${amount}</p>
+  <a href="${esc(adminUrl)}" style="display:inline-block;background:#0a1628;color:#fff;padding:10px 20px;text-decoration:none;font-size:14px;font-weight:600">View in admin →</a>
+</div>`;
+
+  try {
+    const { error } = await getResend().emails.send({ from, to, subject: subjectLine, text, html });
+    if (error) { console.error("[email] resend rejected:", error); return { sent: false, reason: "error", error: String(error) }; }
+    return { sent: true };
+  } catch (err) {
+    console.error("[email] resend threw:", err);
+    return { sent: false, reason: "error", error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export type ShopOrderPaidNotification = {
+  email: string;
+  totalPence: number;
+  orderId: string;
+  lineItems: Array<{ name: string; qty: number; pricePence: number }>;
+};
+
+export async function sendShopOrderPaidNotification(
+  msg: ShopOrderPaidNotification,
+): Promise<NotificationResult> {
+  if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
+    return { sent: false, reason: "unconfigured" };
+  }
+  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const from = process.env.CONTACT_NOTIFY_FROM!;
+  const publicUrl = process.env.PUBLIC_URL ?? "";
+  const adminUrl = `${publicUrl.replace(/\/$/, "")}/admin/orders`;
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const amount = `£${(msg.totalPence / 100).toFixed(2)}`;
+  const subjectLine = `✅ Shop order paid — ${amount} from ${msg.email}`;
+
+  const itemLines = msg.lineItems.map(
+    (li) => `  ${li.qty}x ${li.name} @ £${(li.pricePence / 100).toFixed(2)}`
+  ).join("\n");
+
+  const text = [
+    `New shop order paid via Stripe.`,
+    ``,
+    `Customer: ${msg.email}`,
+    `Total: ${amount}`,
+    `Order ID: ${msg.orderId}`,
+    ``,
+    `Items:`,
+    itemLines,
+    ``,
+    `View in admin: ${adminUrl}`,
+  ].join("\n");
+
+  const itemRows = msg.lineItems.map(
+    (li) => `<tr><td style="padding:6px 0;border-bottom:1px solid #eee">${esc(li.name)}</td><td style="padding:6px 0;border-bottom:1px solid #eee;text-align:center">${li.qty}</td><td style="padding:6px 0;border-bottom:1px solid #eee;text-align:right">£${(li.pricePence / 100).toFixed(2)}</td></tr>`
+  ).join("");
+
+  const html = `<div style="font-family:system-ui,sans-serif;color:#111;max-width:560px;line-height:1.5">
+  <h2 style="margin:0 0 4px;font-size:18px;color:#0a1628">✅ Shop order paid</h2>
+  <p style="margin:0 0 20px;color:#555;font-size:14px">Payment confirmed via Stripe</p>
+  <p style="margin:0 0 10px"><strong>Customer:</strong> <a href="mailto:${esc(msg.email)}" style="color:#0066cc">${esc(msg.email)}</a></p>
+  <p style="margin:0 0 20px"><strong>Total:</strong> ${amount}</p>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+    <thead><tr style="font-size:12px;text-transform:uppercase;color:#666">
+      <th style="text-align:left;padding:6px 0;border-bottom:2px solid #eee">Item</th>
+      <th style="text-align:center;padding:6px 0;border-bottom:2px solid #eee">Qty</th>
+      <th style="text-align:right;padding:6px 0;border-bottom:2px solid #eee">Price</th>
+    </tr></thead>
+    <tbody>${itemRows}</tbody>
+  </table>
+  <a href="${esc(adminUrl)}" style="display:inline-block;background:#0a1628;color:#fff;padding:10px 20px;text-decoration:none;font-size:14px;font-weight:600">View orders in admin →</a>
+</div>`;
+
+  try {
+    const { error } = await getResend().emails.send({ from, to, subject: subjectLine, text, html });
+    if (error) { console.error("[email] resend rejected:", error); return { sent: false, reason: "error", error: String(error) }; }
+    return { sent: true };
+  } catch (err) {
+    console.error("[email] resend threw:", err);
+    return { sent: false, reason: "error", error: err instanceof Error ? err.message : String(err) };
   }
 }

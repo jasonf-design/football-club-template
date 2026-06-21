@@ -10,6 +10,7 @@ import {
   shopOrders,
 } from "../../db/schema";
 import { getStripe } from "~/lib/stripe.server";
+import { sendPitchOrderPaidNotification, sendShopOrderPaidNotification } from "~/lib/email.server";
 
 export async function loader() {
   throw data("Method Not Allowed", { status: 405 });
@@ -108,6 +109,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         stripePaymentIntentId: paymentIntentId,
       })
       .where(eq(pitchOrders.id, order.id));
+
+    sendPitchOrderPaidNotification({
+      name: order.contactName ?? order.displayName,
+      email: order.email,
+      displayName: order.displayName,
+      squareCount: order.squareCount,
+      totalPence: order.totalPence,
+      orderId: order.id,
+    }).catch((e) => console.error("[email] pitch paid notification failed:", e));
     return;
   }
 
@@ -156,6 +166,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         shippingJson: (session.customer_details as unknown) ?? null,
       })
       .where(eq(shopOrders.id, order.id));
+
+    type LineItem = { name: string; qty: number; pricePence: number; productId: string; slug: string };
+    const lineItems = (order.lineItemsJson as LineItem[] | null) ?? [];
+    sendShopOrderPaidNotification({
+      email: order.email,
+      totalPence: order.totalPence,
+      orderId: order.id,
+      lineItems,
+    }).catch((e) => console.error("[email] shop paid notification failed:", e));
   }
 }
 
