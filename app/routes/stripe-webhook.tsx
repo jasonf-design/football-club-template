@@ -10,7 +10,7 @@ import {
   shopOrders,
 } from "../../db/schema";
 import { getStripe } from "~/lib/stripe.server";
-import { sendPitchOrderPaidNotification, sendShopOrderPaidNotification } from "~/lib/email.server";
+import { sendPitchOrderPaidNotification, sendShopOrderPaidNotification, sendDonationPaidNotification } from "~/lib/email.server";
 
 export async function loader() {
   throw data("Method Not Allowed", { status: 405 });
@@ -70,6 +70,16 @@ export async function action({ request }: Route.ActionArgs) {
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const kind = session.metadata?.kind;
+
+  if (kind === "club_donation") {
+    const amountPence = Number(session.metadata?.amountPence ?? 0);
+    if (amountPence > 0) {
+      sendDonationPaidNotification({ amountPence })
+        .catch((e) => console.error("[email] donation paid notification failed:", e));
+    }
+    return;
+  }
+
   const orderId = session.metadata?.orderId;
   if (!kind || !orderId) return;
   const paymentIntentId =

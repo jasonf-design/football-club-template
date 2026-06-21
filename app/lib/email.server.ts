@@ -104,6 +104,37 @@ function buildHtmlBody(msg: ContactNotification, adminUrl: string) {
 </div>`;
 }
 
+export type DonationPaidNotification = {
+  amountPence: number;
+};
+
+export async function sendDonationPaidNotification(
+  msg: DonationPaidNotification,
+): Promise<NotificationResult> {
+  if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
+    return { sent: false, reason: "unconfigured" };
+  }
+  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const from = process.env.CONTACT_NOTIFY_FROM!;
+  const amount = `£${(msg.amountPence / 100).toFixed(2)}`;
+  const subjectLine = `✅ Club donation received — ${amount}`;
+  const text = `A donation of ${amount} has been received via Stripe.`;
+  const html = `<div style="font-family:system-ui,sans-serif;color:#111;max-width:560px;line-height:1.5">
+  <h2 style="margin:0 0 4px;font-size:18px;color:#0a1628">✅ Club donation received</h2>
+  <p style="margin:0 0 20px;color:#555;font-size:14px">Payment confirmed via Stripe</p>
+  <p style="font-size:32px;font-weight:700;color:#0a1628;margin:0 0 8px">${amount}</p>
+  <p style="color:#555;font-size:14px">Donated to Doncaster City FC</p>
+</div>`;
+  try {
+    const { error } = await getResend().emails.send({ from, to, subject: subjectLine, text, html });
+    if (error) { console.error("[email] resend rejected:", error); return { sent: false, reason: "error", error: String(error) }; }
+    return { sent: true };
+  } catch (err) {
+    console.error("[email] resend threw:", err);
+    return { sent: false, reason: "error", error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 export type DonationInterestNotification = {
   name: string;
   email: string;

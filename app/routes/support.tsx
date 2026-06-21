@@ -17,13 +17,12 @@ export function meta(_: Route.MetaArgs) {
   ];
 }
 
-const PRESET_AMOUNTS = [5, 10, 25, 50];
+const PRESET_AMOUNTS = [1, 5, 10, 25];
 
 const donationSchema = z.object({
   amount: z.coerce
     .number({ invalid_type_error: "Please enter an amount." })
-    .int("Please enter a whole number of pounds.")
-    .min(1, "Minimum donation is £1.")
+    .min(0.5, "Minimum donation is 50p.")
     .max(10000, "Please contact us for donations over £10,000."),
 });
 
@@ -39,7 +38,7 @@ export async function action({ request }: Route.ActionArgs) {
     return { error: parsed.error.issues[0]?.message ?? "Please enter a valid amount." };
   }
 
-  const amountPence = parsed.data.amount * 100;
+  const amountPence = Math.round(parsed.data.amount * 100);
 
   if (!isStripeConfigured()) {
     const name = String(form.get("name") ?? "").trim();
@@ -117,8 +116,7 @@ export default function Support(_: Route.ComponentProps) {
               <div className="border-l-4 border-green bg-paper-warm p-8">
                 <div className="font-serif text-2xl text-navy">Thanks — we'll be in touch.</div>
                 <p className="mt-2 text-mute">
-                  We've noted your interest in supporting the club. Someone will
-                  contact you to arrange your donation once payments are set up.
+                  We've noted your interest in supporting the club and will be in touch shortly.
                 </p>
               </div>
             ) : (
@@ -135,7 +133,7 @@ export default function Support(_: Route.ComponentProps) {
                     <button
                       key={amt}
                       type="button"
-                      onClick={() => selectAmount(amt)}
+                      onClick={() => (window as unknown as Record<string, (a: number) => void>).selectAmount(amt)}
                       className="preset-btn border border-line bg-paper-warm/30 py-5 text-center font-serif text-2xl text-navy hover:border-navy hover:bg-navy/5 transition-colors focus:outline-none"
                       data-amount={amt}
                     >
@@ -150,10 +148,11 @@ export default function Support(_: Route.ComponentProps) {
                   <input
                     id="custom-amount"
                     type="number"
-                    min="1"
+                    min="0.50"
+                    step="0.50"
                     placeholder="Other amount"
                     className="flex-1 bg-transparent py-5 pr-4 text-navy font-serif text-2xl placeholder:text-mute/40 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    onInput={(e) => selectCustom((e.target as HTMLInputElement).value)}
+                    onInput={(e) => (window as unknown as Record<string, (v: string) => void>).selectCustom((e.target as HTMLInputElement).value)}
                   />
                 </div>
 
@@ -181,7 +180,7 @@ export default function Support(_: Route.ComponentProps) {
                 <p className="mt-4 text-xs text-mute text-center leading-relaxed">
                   {stripeReady
                     ? "Secure payment via Stripe. This is a voluntary contribution — no goods or services are provided in return."
-                    : "Online payments are being set up. Leave your details and we'll be in touch to arrange your donation."}
+                    : "Leave your details and we'll be in touch to arrange your donation."}
                 </p>
               </form>
             )}
