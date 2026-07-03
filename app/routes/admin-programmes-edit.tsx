@@ -4,8 +4,9 @@ import type { Route } from "./+types/admin-programmes-edit";
 import { db } from "~/db.server";
 import { fixtures, media, players, programmes, sponsors } from "../../db/schema";
 import { requireAdmin } from "~/lib/session.server";
-import { AdminBreadcrumbs, AdminPage, DangerButton, PrimaryButton } from "~/components/admin/AdminShell";
+import { AdminBreadcrumbs, AdminPage, DangerButton, PrimaryButton, SecondaryButton } from "~/components/admin/AdminShell";
 import { variantUrl } from "~/lib/uploads";
+import { sendLeagueNotification } from "~/lib/email.server";
 
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Edit Programme · Admin" }];
@@ -119,6 +120,31 @@ export async function action({ request, params }: Route.ActionArgs) {
     return { saved: "unpublish" };
   }
 
+  if (intent === "notify-league") {
+    const [prog] = await db.select().from(programmes).where(eq(programmes.id, params.id)).limit(1);
+    if (!prog || prog.status !== "published") return { saved: null, notifyError: "Programme must be published before notifying the league." };
+    const [fixture] = prog.fixtureId
+      ? await db.select().from(fixtures).where(eq(fixtures.id, prog.fixtureId)).limit(1)
+      : [null];
+    const publicUrl = process.env.PUBLIC_URL ?? "https://doncastercity-fc.com";
+    const programmeUrl = `${publicUrl}/programmes/${prog.id}`;
+    const programmeTitle = fixture ? `DCFC vs ${fixture.opponent}` : "DCFC Programme";
+    const matchDate = fixture
+      ? new Date(fixture.kickoff).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+      : "";
+    const result = await sendLeagueNotification({
+      programmeTitle,
+      programmeUrl,
+      matchDate,
+      competition: fixture?.competition ?? "",
+    });
+    if (result.sent) {
+      await db.update(programmes).set({ leagueNotifiedAt: new Date() }).where(eq(programmes.id, params.id));
+      return { saved: "notify-league" };
+    }
+    return { saved: null, notifyError: "Email failed to send — check Resend is configured." };
+  }
+
   return { saved: null };
 }
 
@@ -142,6 +168,7 @@ export default function AdminProgrammesEdit({ loaderData }: Route.ComponentProps
   const { prog, fixture, coverImage, featuredPlayer, featuredSponsor, coverSponsor, allPlayers, allSponsors, allMedia } = loaderData;
   const action = useActionData<typeof import("./admin-programmes-edit").action>();
   const saved = action && "saved" in action ? action.saved : null;
+  const notifyError = action && "notifyError" in action ? (action as { notifyError: string }).notifyError : null;
 
   const kickoff = fixture ? new Date(fixture.kickoff) : null;
   const matchTitle = fixture
@@ -150,6 +177,13 @@ export default function AdminProgrammesEdit({ loaderData }: Route.ComponentProps
 
   const freeFrom = kickoff ? new Date(kickoff.getTime() + 48 * 60 * 60 * 1000) : null;
   const isLive = prog.status === "published";
+
+  const isNcelGame = fixture
+    ? fixture.competition.toLowerCase().includes("northern counties") || fixture.competition.toLowerCase().includes("ncel")
+    : false;
+  const isLeagueCup = fixture
+    ? fixture.competition.toLowerCase().includes("cup")
+    : false;
 
   const checkDone = {
     cover: !!prog.coverImageMediaId,
@@ -191,6 +225,9 @@ export default function AdminProgrammesEdit({ loaderData }: Route.ComponentProps
                 <Link to={`/programmes/${prog.id}`} target="_blank" className="block text-xs text-sky-deep underline">
                   View programme ↗
                 </Link>
+                <Link to={`/programmes/${prog.id}?preview=1`} target="_blank" className="block text-xs text-amber-600 underline">
+                  Preview as brochure ↗
+                </Link>
                 <Form method="post">
                   <input type="hidden" name="intent" value="unpublish" />
                   <DangerButton type="submit">Unpublish</DangerButton>
@@ -199,6 +236,9 @@ export default function AdminProgrammesEdit({ loaderData }: Route.ComponentProps
             ) : (
               <>
                 <div className="text-sm text-mute">Draft — not visible to supporters</div>
+                <Link to={`/programmes/${prog.id}?preview=1`} target="_blank" className="block text-xs text-amber-600 underline">
+                  Preview as brochure ↗
+                </Link>
                 {!allDone && (
                   <div className="text-xs text-amber-600">Complete all checklist items before publishing.</div>
                 )}
@@ -211,6 +251,43 @@ export default function AdminProgrammesEdit({ loaderData }: Route.ComponentProps
               </>
             )}
           </div>
+
+          {isNcelGame && (
+            <div className="border border-line p-4 space-y-3">
+              <div className="text-[10px] uppercase tracking-[0.24em] text-mute">League notification</div>
+              {prog.leagueNotifiedAt ? (
+                <>
+                  <div className="text-xs text-green-700 font-medium">
+                    Sent to Matt Jones ✓
+                  </div>
+                  <div className="text-xs text-mute">
+                    {new Date(prog.leagueNotifiedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                  </div>
+                  <Form method="post">
+                    <input type="hidden" name="intent" value="notify-league" />
+                    <SecondaryButton type="submit">Resend</SecondaryButton>
+                  </Form>
+                </>
+              ) : (
+                <>
+                  <div className="text-xs text-mute">
+                    NCEL rules require a copy to be sent to Matt Jones within 3 days of the match.
+                  </div>
+                  {notifyError && <div className="text-xs text-red-600">{notifyError}</div>}
+                  {saved === "notify-league" && <div className="text-xs text-green-700">Sent ✓</div>}
+                  <Form method="post">
+                    <input type="hidden" name="intent" value="notify-league" />
+                    <SecondaryButton type="submit" disabled={!isLive}>
+                      {isLive ? "Send to Matt Jones" : "Publish first"}
+                    </SecondaryButton>
+                  </Form>
+                  {isLeagueCup && (
+                    <div className="text-xs text-amber-600">League Cup — JCP Construction logo required on cover.</div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right: edit sections */}

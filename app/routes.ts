@@ -43,6 +43,9 @@ export default [
   // Stripe webhook — public, no layout, no auth (signature verified)
   route("api/stripe-webhook", "routes/stripe-webhook.tsx"),
 
+  // Cron endpoints — protected by CRON_SECRET bearer token
+  route("api/cron/programmes", "routes/api-cron-programmes.tsx"),
+
   // Admin CMS
   ...prefix("admin", [
     route("login", "routes/admin-login.tsx"),

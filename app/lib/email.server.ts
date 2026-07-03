@@ -297,6 +297,53 @@ export async function sendPlayerSponsorInterestNotification(
   }
 }
 
+export type LeagueNotification = {
+  programmeTitle: string;
+  programmeUrl: string;
+  matchDate: string;
+  competition: string;
+};
+
+export async function sendLeagueNotification(
+  msg: LeagueNotification,
+): Promise<NotificationResult> {
+  if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
+    return { sent: false, reason: "unconfigured" };
+  }
+  const from = process.env.CONTACT_NOTIFY_FROM!;
+  const to = "matt.jones@ncel.org.uk";
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const subjectLine = `DCFC Match Programme — ${msg.programmeTitle}`;
+  const text = [
+    `Dear Matt,`,
+    ``,
+    `Please find our match programme for ${msg.programmeTitle} (${msg.matchDate}, ${msg.competition}) at the link below:`,
+    ``,
+    msg.programmeUrl,
+    ``,
+    `Kind regards,`,
+    `Doncaster City FC`,
+  ].join("\n");
+
+  const html = `<div style="font-family:system-ui,sans-serif;color:#111;max-width:560px;line-height:1.5">
+  <p>Dear Matt,</p>
+  <p>Please find our match programme for <strong>${esc(msg.programmeTitle)}</strong> (${esc(msg.matchDate)}, ${esc(msg.competition)}) at the link below:</p>
+  <p><a href="${esc(msg.programmeUrl)}" style="color:#0066cc">${esc(msg.programmeUrl)}</a></p>
+  <p>Kind regards,<br>Doncaster City FC</p>
+</div>`;
+
+  try {
+    const { error } = await getResend().emails.send({ from, to, subject: subjectLine, text, html });
+    if (error) { console.error("[email] resend rejected:", error); return { sent: false, reason: "error", error: String(error) }; }
+    return { sent: true };
+  } catch (err) {
+    console.error("[email] resend threw:", err);
+    return { sent: false, reason: "error", error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 export type ProgrammeInterestNotification = {
   name: string;
   email: string;

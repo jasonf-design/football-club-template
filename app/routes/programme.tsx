@@ -1,12 +1,13 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import { eq, asc, inArray } from "drizzle-orm";
-import { Form, useActionData, useLoaderData } from "react-router";
+import { Form, Link, useActionData } from "react-router";
 import type { Route } from "./+types/programme";
 import { db } from "~/db.server";
 import { fixtures, media, players, programmeInterest, programmes, sponsors } from "../../db/schema";
-import { Container } from "~/components/Container";
 import { variantUrl } from "~/lib/uploads";
 import { readLeagueTable } from "~/lib/fwp.server";
 import { sendProgrammeInterestNotification } from "~/lib/email.server";
+import { requireAdmin } from "~/lib/session.server";
 import { Crest } from "~/components/Crest";
 import { pitchSponsors } from "~/lib/pitchSponsors";
 import { z } from "zod";
@@ -21,9 +22,16 @@ export function meta({ data }: Route.MetaArgs) {
   ];
 }
 
-export async function loader({ params }: Route.LoaderArgs) {
+export async function loader({ request, params }: Route.LoaderArgs) {
+  const url = new URL(request.url);
+  const isPreview = url.searchParams.get("preview") === "1";
+
+  if (isPreview) {
+    await requireAdmin(request);
+  }
+
   const [prog] = await db.select().from(programmes).where(eq(programmes.id, params.id)).limit(1);
-  if (!prog || prog.status !== "published") throw new Response("Not found", { status: 404 });
+  if (!prog || (!isPreview && prog.status !== "published")) throw new Response("Not found", { status: 404 });
 
   const [fixture] = prog.fixtureId
     ? await db.select().from(fixtures).where(eq(fixtures.id, prog.fixtureId)).limit(1)
@@ -31,13 +39,12 @@ export async function loader({ params }: Route.LoaderArgs) {
 
   const kickoff = fixture ? new Date(fixture.kickoff) : null;
   const freeFrom = kickoff ? new Date(kickoff.getTime() + 48 * 60 * 60 * 1000) : null;
-  const isLocked = freeFrom ? Date.now() < freeFrom.getTime() : false;
+  const isLocked = !isPreview && freeFrom ? Date.now() < freeFrom.getTime() : false;
 
   const [coverImage] = prog.coverImageMediaId
     ? await db.select({ filename: media.filename }).from(media).where(eq(media.id, prog.coverImageMediaId)).limit(1)
     : [null];
 
-  // All active sponsors with logo filenames, split by tier
   const allSponsors = await db
     .select({ id: sponsors.id, name: sponsors.name, url: sponsors.url, tier: sponsors.tier, logoFilename: media.filename })
     .from(sponsors)
@@ -68,7 +75,6 @@ export async function loader({ params }: Route.LoaderArgs) {
         .where(eq(players.id, prog.featuredPlayerId)).limit(1)
     : [null];
 
-  // All first-team players for team sheet + player sponsor grid
   const firstTeamPlayers = await db
     .select({
       id: players.id, name: players.name, position: players.position,
@@ -81,7 +87,6 @@ export async function loader({ params }: Route.LoaderArgs) {
     .where(eq(players.active, true))
     .orderBy(asc(players.sortOrder), asc(players.name));
 
-  // Fetch sponsor logo filenames for player sponsor badges
   const sponsorLogoIds = firstTeamPlayers
     .map((p) => p.sponsor1LogoMediaId).filter(Boolean) as string[];
   const sponsorLogoMap = new Map<string, string>();
@@ -91,12 +96,18 @@ export async function loader({ params }: Route.LoaderArgs) {
     logos.forEach((l) => sponsorLogoMap.set(l.id, l.filename));
   }
 
-  // Season fixtures
   const allFixtures = await db
     .select({ id: fixtures.id, opponent: fixtures.opponent, homeAway: fixtures.homeAway, kickoff: fixtures.kickoff, competition: fixtures.competition, status: fixtures.status, homeScore: fixtures.homeScore, awayScore: fixtures.awayScore })
     .from(fixtures).orderBy(asc(fixtures.kickoff));
 
   const leagueSnapshot = await readLeagueTable();
+
+  const isNcelGame = fixture
+    ? fixture.competition.toLowerCase().includes("northern counties") || fixture.competition.toLowerCase().includes("ncel")
+    : false;
+  const isLeagueCup = fixture
+    ? fixture.competition.toLowerCase().includes("cup")
+    : false;
 
   return {
     prog, fixture, kickoff, freeFrom, isLocked, coverImage, coverSponsor: coverSponsor ?? null,
@@ -106,7 +117,7 @@ export async function loader({ params }: Route.LoaderArgs) {
       ...p,
       sponsor1LogoFilename: p.sponsor1LogoMediaId ? (sponsorLogoMap.get(p.sponsor1LogoMediaId) ?? null) : null,
     })),
-    allFixtures, leagueSnapshot,
+    allFixtures, leagueSnapshot, isNcelGame, isLeagueCup, isPreview,
   };
 }
 
@@ -133,7 +144,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   return { ok: true as const };
 }
 
-// ── Shared helpers ────────────────────────────────────────────────────────────
+// ── Shared helpers ─────────────────────────────────────────────────────────────
 
 type Sponsor = { id: string; name: string; url: string | null; logoFilename: string | null };
 
@@ -143,7 +154,10 @@ function SponsorLogo({ sponsor, className = "" }: { sponsor: Sponsor; className?
     : <span className="font-semibold text-navy tracking-wide">{sponsor.name}</span>;
 }
 
-function FixtureRow({ f, isCurrent }: { f: { id: string; opponent: string; homeAway: "home" | "away"; kickoff: Date; status: string; homeScore: number | null; awayScore: number | null }; isCurrent?: boolean }) {
+function FixtureRow({ f, isCurrent }: {
+  f: { id: string; opponent: string; homeAway: "home" | "away"; kickoff: Date; status: string; homeScore: number | null; awayScore: number | null };
+  isCurrent?: boolean;
+}) {
   const date = new Date(f.kickoff);
   const isCompleted = f.status === "completed";
   const homeScore = f.homeScore ?? 0;
@@ -160,41 +174,226 @@ function FixtureRow({ f, isCurrent }: { f: { id: string; opponent: string; homeA
         <span className="text-sm text-ink">{f.opponent}</span>
       </td>
       <td className="py-2 text-right text-sm tabular-nums">
-        {result ? <span className={win ? "text-green-700 font-semibold" : "text-red-600 font-semibold"}>{result}</span>
+        {result
+          ? <span className={win ? "text-green-700 font-semibold" : "text-red-600 font-semibold"}>{result}</span>
           : <span className="text-mute">{date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>}
       </td>
     </tr>
   );
 }
 
-// ── Section wrappers ──────────────────────────────────────────────────────────
-
-function SectionLight({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`py-16 ${className}`}>{children}</section>;
-}
-function SectionDark({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`py-16 bg-navy ${className}`}>{children}</section>;
-}
-function SectionWarm({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`py-16 bg-paper-warm/40 ${className}`}>{children}</section>;
-}
-
-function SectionLabel({ eyebrow, title, light = false }: { eyebrow: string; title: string; light?: boolean }) {
+function NcelAdPage({ src, alt, dark = false }: { src: string; alt: string; dark?: boolean }) {
   return (
-    <div className="mb-8">
-      <div className={`text-[10px] uppercase tracking-[0.28em] mb-2 ${light ? "text-sky" : "text-sky-deep"}`}>{eyebrow}</div>
-      <h2 className={`font-serif text-3xl ${light ? "text-paper" : "text-navy"}`}>{title}</h2>
+    <div className={`h-full flex flex-col items-center justify-center px-8 py-16 ${dark ? "bg-navy" : "bg-paper"}`}>
+      <img
+        src={src}
+        alt={alt}
+        className="max-w-full max-h-[72vh] object-contain mx-auto"
+        onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = "none"; }}
+      />
     </div>
   );
 }
 
-// ── Public component ──────────────────────────────────────────────────────────
+// ── Page layout primitives ─────────────────────────────────────────────────────
+
+// Viewport-filling page — no internal scroll
+function PageFull({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <div className={`h-full relative overflow-hidden flex flex-col ${className}`}>{children}</div>;
+}
+
+// Scrollable page — for content that may exceed viewport
+function PageScroll({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <div className={`min-h-full ${className}`}>{children}</div>;
+}
+
+// Section heading with horizontal rule
+function SectionHeader({
+  eyebrow, title, light = false, className = "",
+}: { eyebrow: string; title: string; light?: boolean; className?: string }) {
+  return (
+    <div className={className}>
+      <div className="flex items-center gap-3 mb-3 sm:mb-4">
+        <span className={`text-[9px] uppercase tracking-[0.3em] font-semibold shrink-0 ${light ? "text-sky" : "text-sky-deep"}`}>
+          {eyebrow}
+        </span>
+        <div className={`flex-1 h-px ${light ? "bg-paper/20" : "bg-line"}`} />
+      </div>
+      <h2 className={`font-serif leading-tight text-3xl sm:text-[2.5rem] ${light ? "text-paper" : "text-navy"}`}>
+        {title}
+      </h2>
+    </div>
+  );
+}
+
+// ── BrochureLayout ─────────────────────────────────────────────────────────────
+
+function BrochureLayout({
+  pages,
+  isPreview,
+  progId,
+}: {
+  pages: { id: string; el: React.ReactNode }[];
+  isPreview?: boolean;
+  progId?: string;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [page, setPage] = useState(0);
+
+  const goTo = useCallback(
+    (n: number) => {
+      const el = scrollRef.current;
+      if (!el || n < 0 || n >= pages.length) return;
+      el.scrollTo({ left: n * el.clientWidth, behavior: "smooth" });
+    },
+    [pages.length],
+  );
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => setPage(Math.round(el.scrollLeft / el.clientWidth));
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === "ArrowRight") goTo(page + 1);
+      if (e.key === "ArrowLeft") goTo(page - 1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [page, goTo]);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  const showDots = pages.length <= 20;
+
+  return (
+    // Dark charcoal background — pages appear as magazine "leaves" on top of it
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#181818" }}>
+      {isPreview && progId && (
+        <div className="flex-shrink-0 bg-amber-500 text-white flex items-center justify-between px-4 py-2 z-10">
+          <span className="text-xs font-semibold tracking-wide uppercase">Preview — not published</span>
+          <Link to={`/admin/programmes/${progId}/edit`} className="text-xs underline font-semibold hover:text-white/80">
+            ← Back to edit
+          </Link>
+        </div>
+      )}
+
+      {/* Main area: scroll track + floating desktop arrows */}
+      <div className="flex-1 relative min-h-0">
+
+        {/* Desktop: side navigation arrows floating over dark background */}
+        <button
+          onClick={() => goTo(page - 1)}
+          disabled={page === 0}
+          className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20
+                     w-10 h-10 items-center justify-center rounded-full
+                     bg-white/6 hover:bg-white/12 text-white/50 hover:text-white
+                     disabled:opacity-15 transition-all text-base"
+          aria-label="Previous page"
+        >
+          ←
+        </button>
+        <button
+          onClick={() => goTo(page + 1)}
+          disabled={page === pages.length - 1}
+          className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20
+                     w-10 h-10 items-center justify-center rounded-full
+                     bg-white/6 hover:bg-white/12 text-white/50 hover:text-white
+                     disabled:opacity-15 transition-all text-base"
+          aria-label="Next page"
+        >
+          →
+        </button>
+
+        {/* Horizontal scroll track */}
+        <div
+          ref={scrollRef}
+          className="h-full flex overflow-x-auto overflow-y-hidden [scroll-snap-type:x_mandatory]"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {pages.map((p) => (
+            // Page slot — full-viewport on mobile, centering container on desktop
+            <div
+              key={p.id}
+              className="min-w-full h-full shrink-0 [scroll-snap-align:start] overflow-y-auto
+                         md:overflow-y-hidden md:flex md:items-center md:justify-center md:px-16 md:py-4"
+            >
+              {/*
+                The "magazine page" — on desktop this is a portrait rectangle with a
+                dramatic shadow, floating on the dark background like a PDF viewer page.
+                On mobile it fills the screen.
+              */}
+              <div
+                className="w-full h-full
+                           md:h-[min(100%,780px)] md:w-auto md:aspect-[3/4]
+                           md:overflow-y-auto
+                           md:shadow-[0_24px_80px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.04)]"
+              >
+                {p.el}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom nav strip */}
+      <div
+        className="flex-shrink-0 flex items-center gap-2 px-3 py-2"
+        style={{ background: "#181818", borderTop: "1px solid rgba(255,255,255,0.05)" }}
+      >
+        {/* Mobile-only arrows */}
+        <button
+          onClick={() => goTo(page - 1)}
+          disabled={page === 0}
+          className="md:hidden w-8 h-6 flex items-center justify-center text-white/40 hover:text-white disabled:opacity-20 transition-colors"
+        >
+          ←
+        </button>
+
+        <div className="flex-1 flex items-center justify-center gap-1.5 flex-wrap py-0.5">
+          {showDots && pages.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              className={[
+                "rounded-full transition-all duration-200 shrink-0",
+                i === page ? "bg-sky w-5 h-1.5" : "bg-white/20 w-1.5 h-1.5 hover:bg-white/45",
+              ].join(" ")}
+              aria-label={`Go to page ${i + 1}`}
+            />
+          ))}
+        </div>
+
+        <span className="text-[9px] text-white/25 tabular-nums shrink-0">{page + 1} / {pages.length}</span>
+
+        <button
+          onClick={() => goTo(page + 1)}
+          disabled={page === pages.length - 1}
+          className="md:hidden w-8 h-6 flex items-center justify-center text-white/40 hover:text-white disabled:opacity-20 transition-colors"
+        >
+          →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Public component ───────────────────────────────────────────────────────────
 
 export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
   const {
     prog, fixture, kickoff, freeFrom, isLocked, coverImage, coverSponsor,
     featuredSponsor, featuredPlayer, platinumSponsors, goldSponsors, silverSponsors,
-    firstTeamPlayers, allFixtures, leagueSnapshot,
+    firstTeamPlayers, allFixtures, leagueSnapshot, isNcelGame, isLeagueCup, isPreview,
   } = loaderData;
 
   const actionData = useActionData<typeof action>();
@@ -206,40 +405,41 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
     ? kickoff.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
     : null;
 
-  // Parse opposition lineup
   const oppositionLines = (prog.oppositionLineup ?? "")
     .split("\n").map((l) => l.trim()).filter(Boolean);
 
-  // ── Locked / interest capture ──────────────────────────────────────────────
+  // ── Locked ────────────────────────────────────────────────────────────────
   if (isLocked) {
     return (
       <div className="relative min-h-[60vh] bg-navy flex flex-col items-center justify-center text-center overflow-hidden">
         {coverImage && (
-          <img src={variantUrl(coverImage.filename, 1200, "jpeg")} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30" />
+          <img src={variantUrl(coverImage.filename, 1200, "jpeg")} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ opacity: 0.5 }} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-navy/60 via-navy/80 to-navy" />
+        <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/70 to-navy/40" />
         <div className="relative z-10 px-6 py-16 max-w-xl mx-auto">
-          <Crest className="h-16 w-16 text-paper mx-auto mb-6 opacity-80" />
+          <Crest className="h-14 w-14 text-paper mx-auto mb-6 opacity-70" />
           <div className="text-[10px] uppercase tracking-[0.3em] text-sky mb-3">{fixture?.competition}</div>
           <h1 className="font-serif text-4xl sm:text-5xl text-paper mb-2">{matchTitle}</h1>
-          {matchDate && <div className="text-paper/60 text-sm mb-8">{matchDate}</div>}
-          <div className="bg-paper/10 border border-paper/20 p-6 mb-6">
+          {matchDate && <div className="text-paper/50 text-sm mb-8">{matchDate}</div>}
+          <div className="bg-paper/8 border border-paper/15 p-6 mb-6">
             <div className="font-serif text-xl text-paper mb-2">Programme available from</div>
             <div className="text-sky text-lg font-semibold">
-              {freeFrom ? freeFrom.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " at " + freeFrom.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "48 hours after kick-off"}
+              {freeFrom
+                ? freeFrom.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " at " + freeFrom.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+                : "48 hours after kick-off"}
             </div>
-            <p className="text-paper/50 text-xs mt-2">Register your interest and we'll let you know when it goes free.</p>
+            <p className="text-paper/40 text-xs mt-2">Register your interest and we'll let you know when it goes free.</p>
           </div>
           {interestSubmitted ? (
-            <div className="bg-sky/20 border border-sky/40 px-6 py-4 text-paper">
+            <div className="bg-sky/15 border border-sky/30 px-6 py-4 text-paper">
               <div className="font-serif text-lg">Thanks — we'll be in touch!</div>
-              <p className="text-paper/70 text-sm mt-1">Free from {freeFrom?.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}.</p>
+              <p className="text-paper/60 text-sm mt-1">Free from {freeFrom?.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}.</p>
             </div>
           ) : (
             <Form method="post" className="space-y-3">
               {interestError && <div className="text-red-300 text-sm">{interestError}</div>}
-              <input type="text" name="name" required placeholder="Your name" className="w-full bg-paper/10 border border-paper/20 text-paper placeholder:text-paper/40 px-4 py-3 outline-none focus:border-sky" />
-              <input type="email" name="email" required placeholder="Email address" className="w-full bg-paper/10 border border-paper/20 text-paper placeholder:text-paper/40 px-4 py-3 outline-none focus:border-sky" />
+              <input type="text" name="name" required placeholder="Your name" className="w-full bg-paper/8 border border-paper/15 text-paper placeholder:text-paper/30 px-4 py-3 outline-none focus:border-sky" />
+              <input type="email" name="email" required placeholder="Email address" className="w-full bg-paper/8 border border-paper/15 text-paper placeholder:text-paper/30 px-4 py-3 outline-none focus:border-sky" />
               <button type="submit" className="w-full bg-sky-deep text-paper py-3 font-semibold uppercase tracking-wide text-sm hover:bg-sky transition-colors">
                 Register interest →
               </button>
@@ -250,480 +450,723 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
     );
   }
 
-  // ── Full programme ─────────────────────────────────────────────────────────
-  return (
-    <div className="bg-paper">
+  // ── Build pages ────────────────────────────────────────────────────────────
 
-      {/* ── 1. COVER ── */}
-      <div className="relative min-h-[80vh] bg-navy flex flex-col overflow-hidden">
-        {coverImage && (
-          <img src={variantUrl(coverImage.filename, 1200, "jpeg")} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" />
+  const pages: { id: string; el: React.ReactNode }[] = [];
+
+  // ── 1. Cover ─────────────────────────────────────────────────────────────────
+  pages.push({
+    id: "cover",
+    el: (
+      <PageFull className="bg-navy">
+        {/* Ghost crest for no-image fallback */}
+        {!coverImage && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+            <Crest className="w-[70%] max-w-sm h-auto text-paper/[0.035]" />
+          </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-navy/40 via-navy/60 to-navy" />
-        <div className="relative z-10 flex flex-col flex-1 items-center justify-center text-center px-6 py-16">
-          <Crest className="h-20 w-20 text-paper mb-6 opacity-90" />
-          <div className="text-[10px] uppercase tracking-[0.3em] text-sky mb-3">{fixture?.competition ?? "Doncaster City FC"}</div>
-          <h1 className="font-serif text-5xl sm:text-7xl text-paper leading-none mb-3">{matchTitle}</h1>
-          {matchDate && <div className="text-paper/60 mb-1">{matchDate}</div>}
-          {fixture && kickoff && (
-            <div className="text-paper/50 text-sm">
-              Kick-off: {kickoff.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} · {fixture.venue ?? (fixture.homeAway === "home" ? "Marra Falcons Stadium" : "Away")}
+
+        {/* Cover photo — high opacity, full bleed */}
+        {coverImage && (
+          <img
+            src={variantUrl(coverImage.filename, 1200, "jpeg")}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover object-center"
+            style={{ opacity: 0.82 }}
+          />
+        )}
+
+        {/* Gradient layers: strong at very bottom, vignette at top */}
+        <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/25 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-52 bg-gradient-to-b from-navy/65 to-transparent" />
+
+        {/* Header strip */}
+        <div className="relative z-10 flex items-center justify-between px-5 pt-5 sm:px-8 sm:pt-7 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <Crest className="h-9 w-9 sm:h-11 sm:w-11 text-paper drop-shadow-lg" />
+            <div>
+              <div className="text-paper font-semibold text-[10px] sm:text-xs tracking-[0.18em] uppercase leading-none">Doncaster City</div>
+              <div className="text-paper/45 text-[8px] sm:text-[9px] tracking-[0.15em] uppercase mt-0.5">Football Club</div>
+            </div>
+          </div>
+          {isNcelGame && (
+            <div className="flex items-center gap-3">
+              <img src="/ncel/ncefl%20logo.png" alt="NCEL" className="h-6 sm:h-7 w-auto object-contain brightness-0 invert opacity-55" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              <img src="/ncel/MacronLogoPos.png" alt="Macron" className="h-5 sm:h-6 w-auto object-contain brightness-0 invert opacity-50" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              {isLeagueCup && (
+                <img src="/ncel/jcpconstruction_logo_whitebg.jpg" alt="JCP Construction" className="h-6 w-auto object-contain p-0.5" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              )}
             </div>
           )}
         </div>
+
+        {/* Spacer pushes match info to bottom */}
+        <div className="flex-1" />
+
+        {/* Match info — bottom-anchored editorial layout */}
+        <div className="relative z-10 px-5 pb-4 sm:px-8 sm:pb-5 shrink-0">
+          {fixture?.competition && (
+            <div className="mb-3 sm:mb-4">
+              <span className="inline-block bg-sky text-navy-deep text-[8px] sm:text-[9px] font-bold uppercase tracking-[0.25em] px-2.5 py-1">
+                {fixture.competition}
+              </span>
+            </div>
+          )}
+
+          {fixture ? (
+            <h1 className="font-serif text-paper leading-[0.88] mb-3 sm:mb-4">
+              <span className="block" style={{ fontSize: "clamp(2.4rem, 9vw, 6.5rem)" }}>DCFC</span>
+              <span
+                className="block text-paper/32 font-light"
+                style={{ fontSize: "clamp(1rem, 3vw, 1.75rem)", letterSpacing: "0.08em", margin: "0.25em 0" }}
+              >
+                versus
+              </span>
+              <span className="block" style={{ fontSize: "clamp(2.4rem, 9vw, 6.5rem)" }}>{fixture.opponent}</span>
+            </h1>
+          ) : (
+            <h1 className="font-serif text-paper leading-[0.9] mb-3" style={{ fontSize: "clamp(2.5rem, 8vw, 5.5rem)" }}>
+              Doncaster City FC
+            </h1>
+          )}
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-paper/50 text-xs sm:text-sm">
+            {matchDate && <span>{matchDate}</span>}
+            {kickoff && (
+              <>
+                <span className="text-paper/18">·</span>
+                <span>Kick-off {kickoff.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
+              </>
+            )}
+            {fixture && (
+              <>
+                <span className="text-paper/18">·</span>
+                <span className="text-paper/32">{fixture.venue ?? (fixture.homeAway === "home" ? "Marra Falcons Stadium" : "Away")}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Cover sponsor strip */}
         {coverSponsor && (
-          <div className="relative z-10 border-t border-paper/10 px-6 py-4 flex items-center justify-center gap-3">
-            <span className="text-[9px] uppercase tracking-[0.22em] text-paper/40">In association with</span>
+          <div className="relative z-10 border-t border-paper/10 px-5 py-3 sm:px-8 flex items-center gap-3 shrink-0 bg-navy/55 backdrop-blur-sm">
+            <span className="text-[8px] uppercase tracking-[0.25em] text-paper/32 shrink-0">In association with</span>
             {coverSponsor.logoFilename
-              ? <img src={variantUrl(coverSponsor.logoFilename, 240, "jpeg")} alt={coverSponsor.name} className="h-8 w-auto max-w-[100px] object-contain brightness-0 invert opacity-70" />
-              : <span className="text-paper/60 text-sm font-semibold">{coverSponsor.name}</span>}
+              ? <img src={variantUrl(coverSponsor.logoFilename, 240, "jpeg")} alt={coverSponsor.name} className="h-7 w-auto max-w-[90px] object-contain brightness-0 invert opacity-60" />
+              : <span className="text-paper/55 text-xs font-semibold">{coverSponsor.name}</span>}
           </div>
         )}
-      </div>
 
-      {/* ── 2. MANAGER'S NOTES ── */}
-      {prog.managersNotes && (
-        <SectionLight>
-          <Container size="narrow">
-            <SectionLabel eyebrow="From the gaffer" title="Manager's notes." />
-            <div className="space-y-4">
+        {/* Programme label bar */}
+        <div className="relative z-10 bg-navy/80 px-5 py-1.5 sm:px-8 shrink-0 flex items-center justify-between">
+          <span className="text-[7px] sm:text-[8px] uppercase tracking-[0.28em] text-paper/22">Official Digital Programme</span>
+          <span className="text-[7px] sm:text-[8px] text-paper/18">doncastercity-fc.com</span>
+        </div>
+      </PageFull>
+    ),
+  });
+
+  // ── 2. Manager's Notes ────────────────────────────────────────────────────────
+  if (prog.managersNotes) {
+    pages.push({
+      id: "notes",
+      el: (
+        <PageScroll className="bg-paper px-6 py-10 sm:px-12 sm:py-14">
+          <div className="max-w-2xl mx-auto">
+            <SectionHeader eyebrow="From the manager" title="Manager's notes." className="mb-8" />
+
+            {/* Decorative large quote mark */}
+            <div
+              className="font-serif text-paper-warm/60 leading-none select-none -mb-6 sm:-mb-8"
+              style={{ fontSize: "clamp(5rem, 14vw, 9rem)" }}
+              aria-hidden="true"
+            >
+              "
+            </div>
+
+            <div className="space-y-4 sm:space-y-5">
               {prog.managersNotes.split("\n\n").map((para, i) => (
-                <p key={i} className="text-ink leading-relaxed">{para}</p>
+                <p
+                  key={i}
+                  className={`text-ink leading-relaxed ${i === 0 ? "text-base sm:text-lg font-medium text-navy" : "text-sm sm:text-base"}`}
+                >
+                  {para}
+                </p>
               ))}
             </div>
-            <div className="mt-8 pt-6 border-t border-line text-[10px] uppercase tracking-[0.22em] text-mute">
-              Doncaster City FC Management
-            </div>
-          </Container>
-        </SectionLight>
-      )}
 
-      {/* ── 3. PLATINUM / PRINCIPAL SPONSOR — FULL PAGE ── */}
-      {platinumSponsors.map((s) => (
-        <SectionDark key={s.id}>
-          <Container size="wide">
-            <div className="text-[10px] uppercase tracking-[0.28em] text-sky mb-2">Platinum partner</div>
-            <div className="border border-paper/10 p-10 sm:p-16 flex flex-col items-center text-center gap-8">
-              {s.logoFilename ? (
-                <div className="bg-paper p-8 inline-flex items-center justify-center w-64 h-40">
-                  <img src={variantUrl(s.logoFilename, 600, "jpeg")} alt={s.name} className="max-h-full max-w-full object-contain" />
-                </div>
-              ) : (
-                <div className="font-serif text-5xl text-paper">{s.name}</div>
-              )}
-              <div>
-                <h2 className="font-serif text-4xl text-paper mb-4">{s.name}</h2>
-                <p className="text-paper/60 max-w-lg leading-relaxed">
-                  Proud platinum partner of Doncaster City FC — supporting the club, the players, and the community.
-                </p>
-              </div>
-              {s.url && (
-                <a href={s.url} target="_blank" rel="noopener noreferrer"
-                  className="inline-block bg-sky-deep text-paper px-8 py-3 font-semibold uppercase tracking-wide text-sm hover:bg-sky transition-colors">
-                  Visit {s.name} ↗
-                </a>
-              )}
+            <div className="mt-10 pt-6 border-t border-line flex items-center gap-3">
+              <Crest className="h-5 w-5 text-navy/30 shrink-0" />
+              <div className="text-[9px] uppercase tracking-[0.25em] text-mute">Doncaster City FC Management</div>
             </div>
-          </Container>
-        </SectionDark>
-      ))}
+          </div>
+        </PageScroll>
+      ),
+    });
+  }
 
-      {/* ── 4. FIXTURES & RESULTS + LEAGUE TABLE ── */}
-      <SectionWarm>
-        <Container size="wide">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div>
-              <SectionLabel eyebrow="2025/26 Season" title="Fixtures &amp; results." />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+  // ── 3. Platinum / principal sponsors ─────────────────────────────────────────
+  platinumSponsors.forEach((s) => {
+    pages.push({
+      id: `platinum-${s.id}`,
+      el: (
+        <PageFull className="bg-navy items-center justify-center text-center px-8 py-10">
+          {/* Corner frame accents */}
+          <div className="absolute top-5 left-5 w-7 h-7 border-t border-l border-paper/18 pointer-events-none" />
+          <div className="absolute top-5 right-5 w-7 h-7 border-t border-r border-paper/18 pointer-events-none" />
+          <div className="absolute bottom-14 left-5 w-7 h-7 border-b border-l border-paper/18 pointer-events-none" />
+          <div className="absolute bottom-14 right-5 w-7 h-7 border-b border-r border-paper/18 pointer-events-none" />
+
+          <div className="text-[9px] uppercase tracking-[0.35em] text-sky mb-6 sm:mb-8">Principal Partner</div>
+
+          {s.logoFilename && (
+            <div className="bg-paper px-10 py-7 sm:px-14 sm:py-9 mb-7 sm:mb-9 inline-flex items-center justify-center max-w-[260px] sm:max-w-xs w-full shadow-2xl">
+              <img src={variantUrl(s.logoFilename, 600, "jpeg")} alt={s.name} className="max-h-20 sm:max-h-24 max-w-full object-contain" />
+            </div>
+          )}
+
+          <h2
+            className="font-serif text-paper mb-4"
+            style={{ fontSize: "clamp(2rem, 6vw, 4rem)" }}
+          >
+            {s.name}
+          </h2>
+
+          <p className="text-paper/45 max-w-xs sm:max-w-sm leading-relaxed text-xs sm:text-sm mb-7 sm:mb-9 mx-auto">
+            Proud principal partner of Doncaster City FC — supporting the club, our players, and the local community.
+          </p>
+
+          {s.url && (
+            <a
+              href={s.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 border border-paper/25 text-paper px-6 py-3 text-[10px] sm:text-xs font-semibold uppercase tracking-widest hover:bg-paper/10 transition-colors"
+            >
+              Visit {s.name} ↗
+            </a>
+          )}
+
+          {/* Footer attribution */}
+          <div className="absolute bottom-5 inset-x-0 flex items-center justify-center gap-3">
+            <div className="h-px w-10 bg-paper/15" />
+            <Crest className="h-4 w-4 text-paper/20" />
+            <div className="h-px w-10 bg-paper/15" />
+          </div>
+        </PageFull>
+      ),
+    });
+  });
+
+  // ── 4. Fixtures ───────────────────────────────────────────────────────────────
+  pages.push({
+    id: "fixtures",
+    el: (
+      <PageScroll className="bg-paper-warm/40 px-6 py-10 sm:px-10 sm:py-12">
+        <SectionHeader eyebrow="2025/26 Season" title="Fixtures & results." className="mb-7" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-10">
+          <div>
+            <div className="text-[9px] uppercase tracking-[0.22em] text-mute font-semibold mb-3">Recent results</div>
+            <table className="w-full">
+              <tbody>
+                {allFixtures.filter((f) => f.status === "completed").slice(-7).reverse()
+                  .map((f) => <FixtureRow key={f.id} f={{ ...f, kickoff: new Date(f.kickoff) }} isCurrent={f.id === fixture?.id} />)}
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <div className="text-[9px] uppercase tracking-[0.22em] text-mute font-semibold mb-3">Coming up</div>
+            <table className="w-full">
+              <tbody>
+                {allFixtures.filter((f) => f.status === "scheduled").slice(0, 7)
+                  .map((f) => <FixtureRow key={f.id} f={{ ...f, kickoff: new Date(f.kickoff) }} isCurrent={f.id === fixture?.id} />)}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </PageScroll>
+    ),
+  });
+
+  // ── 5. League table ───────────────────────────────────────────────────────────
+  if (leagueSnapshot) {
+    pages.push({
+      id: "table",
+      el: (
+        <PageScroll className="bg-paper px-6 py-10 sm:px-10 sm:py-12">
+          <SectionHeader eyebrow={leagueSnapshot.data.competition?.name ?? "League"} title="League table." className="mb-7" />
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-navy text-paper text-[9px] uppercase tracking-[0.18em]">
+                  <th className="px-2 py-2.5 text-left w-8">Pos</th>
+                  <th className="px-2 py-2.5 text-left">Club</th>
+                  <th className="px-2 py-2.5 text-center w-8">P</th>
+                  <th className="px-2 py-2.5 text-center w-8 hidden sm:table-cell">W</th>
+                  <th className="px-2 py-2.5 text-center w-8 hidden sm:table-cell">D</th>
+                  <th className="px-2 py-2.5 text-center w-8 hidden sm:table-cell">L</th>
+                  <th className="px-2 py-2.5 text-center w-10 hidden sm:table-cell">GD</th>
+                  <th className="px-2 py-2.5 text-center w-10">Pts</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leagueSnapshot.data.teams.map((team, i) => {
+                  const isDcfc = team.name.toLowerCase().includes("doncaster city");
+                  return (
+                    <tr key={team.id} className={["border-b border-line text-xs", isDcfc ? "bg-sky/10 font-semibold" : i % 2 === 0 ? "bg-paper" : "bg-paper-warm/25"].join(" ")}>
+                      <td className="px-2 py-2 text-mute tabular-nums">{team.position}</td>
+                      <td className="px-2 py-2">
+                        <span className={isDcfc ? "text-navy font-semibold" : "text-ink"}>{team.name}</span>
+                        {isDcfc && <span className="ml-1.5 text-[8px] uppercase tracking-wide text-sky-deep bg-sky/20 px-1 py-0.5">Us</span>}
+                      </td>
+                      <td className="px-2 py-2 text-center tabular-nums text-mute">{team["all-matches"].played}</td>
+                      <td className="px-2 py-2 text-center tabular-nums text-mute hidden sm:table-cell">{team["all-matches"].won}</td>
+                      <td className="px-2 py-2 text-center tabular-nums text-mute hidden sm:table-cell">{team["all-matches"].drawn}</td>
+                      <td className="px-2 py-2 text-center tabular-nums text-mute hidden sm:table-cell">{team["all-matches"].lost}</td>
+                      <td className="px-2 py-2 text-center tabular-nums text-mute hidden sm:table-cell">
+                        {team["all-matches"]["goal-difference"] > 0 ? "+" : ""}{team["all-matches"]["goal-difference"]}
+                      </td>
+                      <td className="px-2 py-2 text-center tabular-nums font-semibold text-navy">{team["total-points"]}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </PageScroll>
+      ),
+    });
+  }
+
+  // ── 6. Gold / official sponsors (2 per page) ──────────────────────────────────
+  for (let gi = 0; gi < goldSponsors.length; gi += 2) {
+    const pair = goldSponsors.slice(gi, gi + 2);
+    pages.push({
+      id: `gold-${gi}`,
+      el: (
+        <PageFull className="bg-paper px-6 py-8 sm:px-10 sm:py-10">
+          {gi === 0 && (
+            <SectionHeader eyebrow="Official partners" title="Our sponsors." className="mb-6 sm:mb-7 shrink-0" />
+          )}
+          {gi > 0 && (
+            <div className="flex items-center gap-3 mb-6 shrink-0">
+              <span className="text-[9px] uppercase tracking-[0.3em] text-sky-deep font-semibold shrink-0">Official partners</span>
+              <div className="flex-1 h-px bg-line" />
+            </div>
+          )}
+          <div className={`flex-1 grid min-h-0 gap-4 sm:gap-6 ${pair.length === 1 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"}`}>
+            {pair.map((s) => (
+              <div key={s.id} className="border border-line flex flex-col items-center justify-center text-center gap-4 sm:gap-5 p-7 sm:p-10 min-h-0">
+                {s.logoFilename ? (
+                  <div className="h-20 sm:h-24 flex items-center justify-center">
+                    <img src={variantUrl(s.logoFilename, 400, "jpeg")} alt={s.name} className="max-h-full max-w-[180px] sm:max-w-[220px] object-contain" />
+                  </div>
+                ) : null}
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-mute mb-3">Results</div>
-                  <table className="w-full">
-                    <tbody>
-                      {allFixtures.filter((f) => f.status === "completed").slice(-8).reverse()
-                        .map((f) => <FixtureRow key={f.id} f={{ ...f, kickoff: new Date(f.kickoff) }} isCurrent={f.id === fixture?.id} />)}
-                    </tbody>
-                  </table>
+                  <div className="font-serif text-xl sm:text-2xl text-navy mb-1">{s.name}</div>
+                  <div className="text-[9px] uppercase tracking-[0.2em] text-mute">Official Partner · Doncaster City FC</div>
                 </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-mute mb-3">Upcoming</div>
-                  <table className="w-full">
-                    <tbody>
-                      {allFixtures.filter((f) => f.status === "scheduled").slice(0, 8)
-                        .map((f) => <FixtureRow key={f.id} f={{ ...f, kickoff: new Date(f.kickoff) }} isCurrent={f.id === fixture?.id} />)}
-                    </tbody>
-                  </table>
-                </div>
+                {s.url && (
+                  <a href={s.url} target="_blank" rel="noopener noreferrer"
+                    className="text-xs text-sky-deep underline underline-offset-4 hover:text-navy transition-colors">
+                    {s.url.replace(/^https?:\/\/(www\.)?/, "")}
+                  </a>
+                )}
               </div>
-            </div>
+            ))}
+          </div>
+        </PageFull>
+      ),
+    });
+  }
 
-            {leagueSnapshot && (
-              <div>
-                <SectionLabel eyebrow={leagueSnapshot.data.competition?.name} title="League table." />
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr className="bg-navy text-paper text-[10px] uppercase tracking-[0.16em]">
-                        <th className="px-2 py-2 text-left w-8">Pos</th>
-                        <th className="px-2 py-2 text-left">Club</th>
-                        <th className="px-2 py-2 text-center w-8">P</th>
-                        <th className="px-2 py-2 text-center w-8 hidden sm:table-cell">W</th>
-                        <th className="px-2 py-2 text-center w-8 hidden sm:table-cell">D</th>
-                        <th className="px-2 py-2 text-center w-8 hidden sm:table-cell">L</th>
-                        <th className="px-2 py-2 text-center w-10 hidden sm:table-cell">GD</th>
-                        <th className="px-2 py-2 text-center w-10">Pts</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {leagueSnapshot.data.teams.map((team, i) => {
-                        const isDcfc = team.name.toLowerCase().includes("doncaster city");
-                        return (
-                          <tr key={team.id} className={["border-b border-line text-xs", isDcfc ? "bg-sky/10 font-semibold" : i % 2 === 0 ? "bg-paper" : "bg-paper-warm/30"].join(" ")}>
-                            <td className="px-2 py-2 text-mute tabular-nums">{team.position}</td>
-                            <td className="px-2 py-2">
-                              <span className={isDcfc ? "text-navy font-semibold" : "text-ink"}>{team.name}</span>
-                              {isDcfc && <span className="ml-1 text-[8px] uppercase tracking-wide text-sky-deep bg-sky/20 px-1 py-0.5">Us</span>}
-                            </td>
-                            <td className="px-2 py-2 text-center tabular-nums text-mute">{team["all-matches"].played}</td>
-                            <td className="px-2 py-2 text-center tabular-nums text-mute hidden sm:table-cell">{team["all-matches"].won}</td>
-                            <td className="px-2 py-2 text-center tabular-nums text-mute hidden sm:table-cell">{team["all-matches"].drawn}</td>
-                            <td className="px-2 py-2 text-center tabular-nums text-mute hidden sm:table-cell">{team["all-matches"].lost}</td>
-                            <td className="px-2 py-2 text-center tabular-nums text-mute hidden sm:table-cell">
-                              {team["all-matches"]["goal-difference"] > 0 ? "+" : ""}{team["all-matches"]["goal-difference"]}
-                            </td>
-                            <td className="px-2 py-2 text-center tabular-nums font-semibold text-navy">{team["total-points"]}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+  // ── 7. Featured player ────────────────────────────────────────────────────────
+  if (featuredPlayer) {
+    pages.push({
+      id: "player",
+      el: (
+        <PageFull className="bg-navy-deep">
+          {/* Full-bleed player photo */}
+          {featuredPlayer.photoFilename && (
+            <img
+              src={variantUrl(featuredPlayer.photoFilename, 800, "jpeg")}
+              alt={featuredPlayer.name}
+              className="absolute inset-0 h-full w-full object-cover object-top"
+              style={{ opacity: 0.55 }}
+            />
+          )}
+          {!featuredPlayer.photoFilename && (
+            <div className="absolute inset-0 flex items-center justify-end pr-8 pointer-events-none select-none">
+              <Crest className="h-3/4 w-auto text-paper/[0.05]" />
+            </div>
+          )}
+
+          {/* Left gradient so text is readable over image */}
+          <div className="absolute inset-0 bg-gradient-to-r from-navy-deep via-navy-deep/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-navy-deep/60 via-transparent to-navy-deep/40" />
+
+          {/* Content — left-aligned, vertically centered */}
+          <div className="relative z-10 flex flex-col justify-center flex-1 px-6 py-10 sm:px-12 sm:py-14 max-w-lg">
+            <div className="text-[9px] uppercase tracking-[0.3em] text-sky mb-2 font-semibold">Player spotlight</div>
+
+            {featuredPlayer.shirtNumber && (
+              <div
+                className="font-serif text-paper/8 leading-none select-none -mb-4 sm:-mb-6"
+                style={{ fontSize: "clamp(5rem, 18vw, 10rem)" }}
+                aria-hidden="true"
+              >
+                {featuredPlayer.shirtNumber}
+              </div>
+            )}
+
+            {(featuredPlayer.position || featuredPlayer.position2) && (
+              <div className="text-sky/75 text-[10px] uppercase tracking-[0.2em] mb-2">
+                {[featuredPlayer.position, featuredPlayer.position2].filter(Boolean).join(" · ")}
+              </div>
+            )}
+
+            <h2
+              className="font-serif text-paper leading-tight mb-5"
+              style={{ fontSize: "clamp(2.2rem, 7vw, 4.5rem)" }}
+            >
+              {featuredPlayer.name}
+            </h2>
+
+            {featuredPlayer.bio && (
+              <div className="space-y-3">
+                {featuredPlayer.bio.split("\n\n").slice(0, 3).map((para, i) => (
+                  <p key={i} className="text-paper/60 text-sm sm:text-base leading-relaxed">{para}</p>
+                ))}
               </div>
             )}
           </div>
-        </Container>
-      </SectionWarm>
+        </PageFull>
+      ),
+    });
+  }
 
-      {/* ── 5. GOLD / OFFICIAL SPONSORS — HALF PAGES ── */}
-      {goldSponsors.length > 0 && (
-        <SectionLight>
-          <Container size="wide">
-            <SectionLabel eyebrow="Gold partners" title="Our sponsors." />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {goldSponsors.map((s) => (
-                <div key={s.id} className="border border-line p-8 flex flex-col items-center text-center gap-5 min-h-[260px] justify-center">
-                  {s.logoFilename ? (
-                    <div className="h-20 flex items-center">
-                      <img src={variantUrl(s.logoFilename, 400, "jpeg")} alt={s.name} className="max-h-full max-w-[180px] object-contain" />
-                    </div>
-                  ) : (
-                    <div className="font-serif text-2xl text-navy">{s.name}</div>
-                  )}
-                  {s.logoFilename && <div className="font-semibold text-navy">{s.name}</div>}
-                  <div className="text-[9px] uppercase tracking-[0.2em] text-mute">Gold partner · Doncaster City FC</div>
-                  {s.url && (
-                    <a href={s.url} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-sky-deep underline underline-offset-4 hover:text-navy">
-                      {s.url.replace(/^https?:\/\/(www\.)?/, "")}
-                    </a>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Container>
-        </SectionLight>
-      )}
-
-      {/* ── 6. FEATURED PLAYER ── */}
-      {featuredPlayer && (
-        <SectionDark>
-          <Container size="wide">
-            <SectionLabel eyebrow="Player spotlight" title="In focus." light />
-            <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-10 items-start">
-              <div className="aspect-[3/4] bg-navy-deep relative overflow-hidden">
-                {featuredPlayer.photoFilename ? (
-                  <img src={variantUrl(featuredPlayer.photoFilename, 600, "jpeg")} alt={featuredPlayer.name} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Crest className="h-24 w-24 text-paper/20" />
-                  </div>
-                )}
-              </div>
-              <div className="text-paper">
-                {(featuredPlayer.position || featuredPlayer.position2) && (
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-sky mb-2">
-                    {[featuredPlayer.position, featuredPlayer.position2].filter(Boolean).join(" · ")}
-                  </div>
-                )}
-                {featuredPlayer.shirtNumber && (
-                  <div className="font-serif text-8xl text-paper/10 leading-none -mt-4 mb-2 select-none">
-                    {featuredPlayer.shirtNumber}
-                  </div>
-                )}
-                <h3 className="font-serif text-4xl sm:text-5xl leading-none mb-6">{featuredPlayer.name}</h3>
-                {featuredPlayer.bio && (
-                  <div className="space-y-4">
-                    {featuredPlayer.bio.split("\n\n").map((para, i) => (
-                      <p key={i} className="text-paper/70 leading-relaxed">{para}</p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </Container>
-        </SectionDark>
-      )}
-
-      {/* ── 7. SILVER / PARTNER SPONSORS — QUARTER PAGES ── */}
-      {silverSponsors.length > 0 && (
-        <SectionLight>
-          <Container size="wide">
-            <SectionLabel eyebrow="Silver partners" title="Club partners." />
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {silverSponsors.map((s) => (
-                <div key={s.id} className="border border-line p-6 flex flex-col items-center text-center gap-4 min-h-[180px] justify-center">
-                  {s.logoFilename ? (
-                    <img src={variantUrl(s.logoFilename, 240, "jpeg")} alt={s.name} className="max-h-14 max-w-full object-contain" />
-                  ) : (
-                    <div className="font-semibold text-navy text-sm">{s.name}</div>
-                  )}
-                  {s.logoFilename && <div className="text-xs font-medium text-navy">{s.name}</div>}
-                  <div className="text-[9px] uppercase tracking-[0.18em] text-mute">Silver partner</div>
-                  {s.url && (
-                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-sky-deep underline underline-offset-2 hover:text-navy truncate max-w-full">
-                      {s.url.replace(/^https?:\/\/(www\.)?/, "")}
-                    </a>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Container>
-        </SectionLight>
-      )}
-
-      {/* ── 8. KNOW YOUR ENEMY ── */}
-      {prog.oppositionProfile && (
-        <SectionWarm>
-          <Container size="narrow">
-            <SectionLabel eyebrow="Today's opponents" title={`Know your enemy${fixture ? ` — ${fixture.opponent}` : ""}.`} />
-            <div className="space-y-4">
+  // ── 8. Know Your Enemy ───────────────────────────────────────────────────────
+  if (prog.oppositionProfile) {
+    pages.push({
+      id: "opposition",
+      el: (
+        <PageScroll className="bg-paper-warm/40 px-6 py-10 sm:px-12 sm:py-14">
+          <div className="max-w-2xl mx-auto">
+            <SectionHeader
+              eyebrow="Today's opponents"
+              title={fixture ? `${fixture.opponent}.` : "Know your enemy."}
+              className="mb-8"
+            />
+            <div className="space-y-4 sm:space-y-5">
               {prog.oppositionProfile.split("\n\n").map((para, i) => (
-                <p key={i} className="text-ink leading-relaxed">{para}</p>
+                <p key={i} className={`leading-relaxed ${i === 0 ? "text-base sm:text-lg font-medium text-navy" : "text-sm sm:text-base text-ink"}`}>
+                  {para}
+                </p>
               ))}
             </div>
-          </Container>
-        </SectionWarm>
-      )}
+          </div>
+        </PageScroll>
+      ),
+    });
+  }
 
-      {/* ── 9. SPONSOR THE PITCH ── */}
-      <SectionDark>
-        <Container size="wide">
-          <SectionLabel eyebrow="Get involved" title="Sponsor a pitch square." light />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-            <div>
-              <p className="text-paper/70 leading-relaxed mb-6">
-                Put your name — or your business — on the Marra Falcons Stadium pitch. Platinum, gold, and silver squares are available, placing your brand at the heart of every home match.
-              </p>
-              <a href="/pitch" className="inline-block bg-sky-deep text-paper px-6 py-3 font-semibold uppercase tracking-wide text-sm hover:bg-sky transition-colors">
-                View available squares →
-              </a>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-sky mb-4">Current pitch sponsors</div>
+  // ── 9. Silver / partner sponsors ──────────────────────────────────────────────
+  if (silverSponsors.length > 0) {
+    pages.push({
+      id: "silver",
+      el: (
+        <PageScroll className="bg-paper px-6 py-10 sm:px-10 sm:py-12">
+          <SectionHeader eyebrow="Club partners" title="Partners &amp; supporters." className="mb-7" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {silverSponsors.map((s) => (
+              <div key={s.id} className="border border-line p-5 sm:p-6 flex flex-col items-center text-center gap-3 justify-center min-h-[160px] sm:min-h-[180px]">
+                {s.logoFilename ? (
+                  <img src={variantUrl(s.logoFilename, 240, "jpeg")} alt={s.name} className="max-h-12 sm:max-h-14 max-w-full object-contain" />
+                ) : (
+                  <div className="font-serif text-base text-navy">{s.name}</div>
+                )}
+                {s.logoFilename && <div className="text-xs font-medium text-navy leading-tight">{s.name}</div>}
+                <div className="text-[8px] uppercase tracking-[0.18em] text-mute">Club partner</div>
+                {s.url && (
+                  <a href={s.url} target="_blank" rel="noopener noreferrer"
+                    className="text-[9px] text-sky-deep underline underline-offset-2 hover:text-navy truncate max-w-full">
+                    {s.url.replace(/^https?:\/\/(www\.)?/, "")}
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </PageScroll>
+      ),
+    });
+  }
+
+  // ── 10. Sponsor the Pitch ─────────────────────────────────────────────────────
+  pages.push({
+    id: "pitch",
+    el: (
+      <PageFull className="bg-navy px-6 py-10 sm:px-12 sm:py-14 justify-center">
+        {/* Subtle ghost pattern */}
+        <div className="absolute inset-0 flex items-center justify-end pr-6 sm:pr-12 pointer-events-none select-none opacity-30">
+          <svg viewBox="0 0 200 140" className="w-1/2 max-w-sm text-paper/5" fill="none" stroke="currentColor" strokeWidth="1">
+            <rect x="10" y="10" width="180" height="120" />
+            <line x1="10" y1="70" x2="190" y2="70" />
+            <circle cx="100" cy="70" r="25" />
+            <line x1="10" y1="55" x2="10" y2="85" />
+            <line x1="10" y1="55" x2="30" y2="55" />
+            <line x1="10" y1="85" x2="30" y2="85" />
+            <line x1="190" y1="55" x2="190" y2="85" />
+            <line x1="190" y1="55" x2="170" y2="55" />
+            <line x1="190" y1="85" x2="170" y2="85" />
+          </svg>
+        </div>
+
+        <div className="relative z-10 max-w-lg">
+          <SectionHeader eyebrow="Get involved" title="Sponsor a pitch square." light className="mb-6 sm:mb-8" />
+          <p className="text-paper/55 leading-relaxed text-sm sm:text-base mb-7">
+            Put your name — or your business — on the Marra Falcons Stadium pitch. Platinum, gold, and silver squares are available, placing your brand at the heart of every home match.
+          </p>
+
+          <a href="/pitch"
+            className="inline-flex items-center gap-2 bg-sky text-navy-deep px-6 py-3 font-semibold text-xs sm:text-sm uppercase tracking-wide hover:bg-paper transition-colors mb-10">
+            View available squares →
+          </a>
+
+          {pitchSponsors.length > 0 && (
+            <>
+              <div className="text-[9px] uppercase tracking-[0.22em] text-sky mb-4 font-semibold">Current pitch sponsors</div>
               <div className="space-y-2">
                 {pitchSponsors.map((ps) => (
-                  <div key={ps.id} className="flex items-center justify-between border border-paper/10 px-4 py-3">
+                  <div key={ps.id} className="flex items-center justify-between border border-paper/10 px-4 py-2.5 hover:border-paper/20 transition-colors">
                     <div>
                       <div className="text-paper text-sm font-medium">{ps.name}</div>
-                      <div className="text-paper/40 text-[10px] uppercase tracking-wide mt-0.5">{ps.squares.length} square{ps.squares.length !== 1 ? "s" : ""}</div>
+                      <div className="text-paper/35 text-[9px] uppercase tracking-wide mt-0.5">{ps.squares.length} square{ps.squares.length !== 1 ? "s" : ""}</div>
                     </div>
-                    <div className={["text-[9px] uppercase tracking-wide px-2 py-1 font-semibold",
-                      ps.tier === "platinum" ? "bg-yellow-500/20 text-yellow-300" :
-                      ps.tier === "gold" ? "bg-amber-500/20 text-amber-300" :
-                      "bg-paper/10 text-paper/60"].join(" ")}>
+                    <div className={["text-[8px] uppercase tracking-wide px-2 py-0.5 font-semibold",
+                      ps.tier === "platinum" ? "bg-yellow-500/15 text-yellow-300" :
+                      ps.tier === "gold" ? "bg-amber-500/15 text-amber-300" :
+                      "bg-paper/8 text-paper/45"].join(" ")}>
                       {ps.tier}
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        </Container>
-      </SectionDark>
+            </>
+          )}
+        </div>
+      </PageFull>
+    ),
+  });
 
-      {/* ── 10. PLAYER SPONSORS GRID ── */}
-      <SectionLight>
-        <Container size="wide">
-          <SectionLabel eyebrow="Sponsor a player" title="Player sponsors." />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {firstTeamPlayers.map((p) => (
-              <div key={p.id} className="border border-line overflow-hidden flex flex-col">
-                <div className="aspect-[3/4] bg-navy/5 relative overflow-hidden">
-                  {p.photoFilename ? (
-                    <img src={variantUrl(p.photoFilename, 400, "jpeg")} alt={p.name}
-                      loading="lazy" decoding="async"
-                      className="absolute inset-0 h-full w-full object-cover" />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-navy to-navy-deep flex items-center justify-center">
-                      {p.shirtNumber && <span className="font-serif text-5xl text-paper/20">{p.shirtNumber}</span>}
-                    </div>
-                  )}
-                  {p.shirtNumber && (
-                    <div className="absolute top-2 left-2 bg-navy text-paper text-[10px] font-bold px-1.5 py-0.5 tabular-nums">
-                      {p.shirtNumber}
-                    </div>
-                  )}
-                </div>
-                <div className="p-3 flex flex-col gap-2 flex-1">
-                  <div>
-                    <div className="font-serif text-sm text-navy leading-tight">{p.name}</div>
-                    {p.position && <div className="text-[9px] uppercase tracking-[0.16em] text-mute mt-0.5">{p.position}</div>}
+  // ── 11. Player sponsors grid ──────────────────────────────────────────────────
+  pages.push({
+    id: "player-sponsors",
+    el: (
+      <PageScroll className="bg-paper px-6 py-10 sm:px-8 sm:py-12">
+        <SectionHeader eyebrow="Sponsor a player" title="Player sponsors." className="mb-7" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          {firstTeamPlayers.map((p) => (
+            <div key={p.id} className="border border-line overflow-hidden flex flex-col">
+              <div className="aspect-[3/4] bg-navy/5 relative overflow-hidden">
+                {p.photoFilename ? (
+                  <img
+                    src={variantUrl(p.photoFilename, 400, "jpeg")}
+                    alt={p.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-navy to-navy-deep flex items-center justify-center">
+                    {p.shirtNumber && <span className="font-serif text-5xl text-paper/15">{p.shirtNumber}</span>}
                   </div>
-                  {p.sponsor1Name ? (
-                    <div className="mt-auto">
-                      <div className="text-[8px] uppercase tracking-[0.16em] text-mute mb-1">Sponsored by</div>
-                      {p.sponsor1Url ? (
-                        <a href={p.sponsor1Url} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 border border-line bg-paper-warm/30 px-2 py-1 hover:border-sky-deep/40 hover:bg-sky/5 transition-colors">
-                          {p.sponsor1LogoFilename && (
-                            <img src={variantUrl(p.sponsor1LogoFilename, 120, "jpeg")} alt={p.sponsor1Name}
-                              className="h-4 w-auto max-w-[32px] object-contain flex-shrink-0" />
-                          )}
-                          <span className="text-[9px] uppercase tracking-[0.12em] text-navy/70 font-semibold truncate">{p.sponsor1Name}</span>
-                        </a>
-                      ) : (
-                        <div className="flex items-center gap-1.5 border border-line bg-paper-warm/30 px-2 py-1">
-                          {p.sponsor1LogoFilename && (
-                            <img src={variantUrl(p.sponsor1LogoFilename, 120, "jpeg")} alt={p.sponsor1Name}
-                              className="h-4 w-auto max-w-[32px] object-contain flex-shrink-0" />
-                          )}
-                          <span className="text-[9px] uppercase tracking-[0.12em] text-navy/70 font-semibold truncate">{p.sponsor1Name}</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <a href={`/sponsor/${p.id}`} className="mt-auto block text-[8px] uppercase tracking-[0.16em] text-sky-deep border border-dashed border-sky-deep/30 px-2 py-1.5 text-center hover:bg-sky/5 transition-colors">
-                      Available to sponsor
-                    </a>
-                  )}
-                </div>
+                )}
+                {p.shirtNumber && (
+                  <div className="absolute top-2 left-2 bg-navy text-paper text-[9px] font-bold px-1.5 py-0.5 tabular-nums">
+                    {p.shirtNumber}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        </Container>
-      </SectionLight>
-
-      {/* ── 11. TEAM SHEET — BACK PAGE ── */}
-      <SectionWarm>
-        <Container size="wide">
-          <SectionLabel eyebrow="Today's match" title="Team sheet." />
-          <div className="grid grid-cols-2 gap-8 sm:gap-16">
-            {/* DCFC */}
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <Crest className="h-10 w-10 text-navy" />
+              <div className="p-2.5 sm:p-3 flex flex-col gap-2 flex-1">
                 <div>
-                  <div className="font-serif text-lg text-navy leading-tight">Doncaster City FC</div>
-                  <div className="text-[9px] uppercase tracking-[0.2em] text-mute">Home</div>
+                  <div className="font-serif text-sm text-navy leading-tight">{p.name}</div>
+                  {p.position && <div className="text-[9px] uppercase tracking-[0.14em] text-mute mt-0.5">{p.position}</div>}
                 </div>
-              </div>
-              <table className="w-full">
-                <tbody>
-                  {firstTeamPlayers
-                    .slice()
-                    .sort((a, b) => (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99))
-                    .map((p) => (
-                      <tr key={p.id} className="border-b border-line">
-                        <td className="py-2 pr-4 tabular-nums text-mute text-sm w-8">
-                          {p.shirtNumber ?? "—"}
-                        </td>
-                        <td className="py-2 text-sm font-medium text-navy">{p.name}</td>
-                        <td className="py-2 text-right text-[10px] uppercase tracking-wide text-mute hidden sm:table-cell">
-                          {p.position ?? ""}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Opposition */}
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 border border-line flex items-center justify-center bg-paper flex-shrink-0">
-                  <span className="text-[9px] uppercase tracking-wide text-mute">Crest</span>
-                </div>
-                <div>
-                  <div className="font-serif text-lg text-navy leading-tight">{fixture?.opponent ?? "Opposition"}</div>
-                  <div className="text-[9px] uppercase tracking-[0.2em] text-mute">Away</div>
-                </div>
-              </div>
-              {oppositionLines.length > 0 ? (
-                <table className="w-full">
-                  <tbody>
-                    {oppositionLines.map((line, i) => {
-                      const match = line.match(/^(\d+)\s+(.+)$/);
-                      return (
-                        <tr key={i} className="border-b border-line">
-                          <td className="py-2 pr-4 tabular-nums text-mute text-sm w-8">{match ? match[1] : i + 1}</td>
-                          <td className="py-2 text-sm font-medium text-navy">{match ? match[2] : line}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="space-y-0">
-                  {Array.from({ length: 16 }, (_, i) => (
-                    <div key={i} className="flex items-center gap-4 border-b border-line py-2">
-                      <span className="text-mute text-sm tabular-nums w-8">{i + 1}</span>
-                      <div className="flex-1 h-px bg-line/60" />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </Container>
-      </SectionWarm>
-
-      {/* ── 12. SPONSOR SPOTLIGHT ── */}
-      {featuredSponsor && (
-        <SectionDark>
-          <Container size="wide">
-            <SectionLabel eyebrow="Proud partner" title="Sponsor spotlight." light />
-            <div className="border border-paper/10 p-8 sm:p-12 flex flex-col sm:flex-row items-center gap-8">
-              {featuredSponsor.logoFilename && (
-                <div className="flex-shrink-0 bg-paper p-6 flex items-center justify-center w-48 h-32">
-                  <img src={variantUrl(featuredSponsor.logoFilename, 400, "jpeg")} alt={featuredSponsor.name} className="max-h-full max-w-full object-contain" />
-                </div>
-              )}
-              <div>
-                <h3 className="font-serif text-2xl text-paper mb-3">{featuredSponsor.name}</h3>
-                <p className="text-paper/60 leading-relaxed mb-4">Proud partner of Doncaster City FC, supporting the club and the community.</p>
-                {featuredSponsor.url && (
-                  <a href={featuredSponsor.url} target="_blank" rel="noopener noreferrer"
-                    className="inline-block bg-sky-deep text-paper px-5 py-2.5 text-xs font-semibold uppercase tracking-wide hover:bg-sky transition-colors">
-                    Visit {featuredSponsor.name} ↗
+                {p.sponsor1Name ? (
+                  <div className="mt-auto">
+                    <div className="text-[8px] uppercase tracking-[0.14em] text-mute mb-1">Sponsored by</div>
+                    {p.sponsor1Url ? (
+                      <a href={p.sponsor1Url} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 border border-line bg-paper-warm/30 px-2 py-1 hover:border-sky-deep/40 hover:bg-sky/5 transition-colors">
+                        {p.sponsor1LogoFilename && (
+                          <img src={variantUrl(p.sponsor1LogoFilename, 120, "jpeg")} alt={p.sponsor1Name} className="h-4 w-auto max-w-[30px] object-contain shrink-0" />
+                        )}
+                        <span className="text-[9px] uppercase tracking-[0.1em] text-navy/65 font-semibold truncate">{p.sponsor1Name}</span>
+                      </a>
+                    ) : (
+                      <div className="flex items-center gap-1.5 border border-line bg-paper-warm/30 px-2 py-1">
+                        {p.sponsor1LogoFilename && (
+                          <img src={variantUrl(p.sponsor1LogoFilename, 120, "jpeg")} alt={p.sponsor1Name} className="h-4 w-auto max-w-[30px] object-contain shrink-0" />
+                        )}
+                        <span className="text-[9px] uppercase tracking-[0.1em] text-navy/65 font-semibold truncate">{p.sponsor1Name}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <a href={`/sponsor/${p.id}`} className="mt-auto block text-[8px] uppercase tracking-[0.14em] text-sky-deep border border-dashed border-sky-deep/30 px-2 py-1.5 text-center hover:bg-sky/5 transition-colors">
+                    Available to sponsor
                   </a>
                 )}
               </div>
             </div>
-          </Container>
-        </SectionDark>
-      )}
+          ))}
+        </div>
+      </PageScroll>
+    ),
+  });
 
-      {/* ── Footer ── */}
-      <div className="bg-paper border-t border-line py-8">
-        <Container size="wide">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-mute">
-            <div className="flex items-center gap-3">
-              <Crest className="h-6 w-6 text-navy" />
-              <span>Doncaster City FC — Official Digital Programme</span>
+  // ── 12. Team sheet ────────────────────────────────────────────────────────────
+  pages.push({
+    id: "teamsheet",
+    el: (
+      <PageScroll className="bg-paper-warm/30 px-6 py-10 sm:px-10 sm:py-12">
+        <SectionHeader eyebrow="Today's match" title="Team sheet." className="mb-7" />
+        <div className="grid grid-cols-2 gap-6 sm:gap-12">
+          <div>
+            <div className="flex items-center gap-2.5 mb-5">
+              <Crest className="h-8 w-8 sm:h-10 sm:w-10 text-navy shrink-0" />
+              <div>
+                <div className="font-serif text-base sm:text-lg text-navy leading-tight">Doncaster City FC</div>
+                <div className="text-[9px] uppercase tracking-[0.18em] text-mute">Home</div>
+              </div>
             </div>
-            <span>doncastercity-fc.com</span>
+            <table className="w-full">
+              <tbody>
+                {firstTeamPlayers
+                  .slice()
+                  .sort((a, b) => (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99))
+                  .map((p) => (
+                    <tr key={p.id} className="border-b border-line">
+                      <td className="py-1.5 sm:py-2 pr-3 tabular-nums text-mute text-xs sm:text-sm w-7 sm:w-8">{p.shirtNumber ?? "—"}</td>
+                      <td className="py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-navy">{p.name}</td>
+                      <td className="py-1.5 sm:py-2 text-right text-[9px] sm:text-[10px] uppercase tracking-wide text-mute hidden sm:table-cell">{p.position ?? ""}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
           </div>
-        </Container>
-      </div>
-    </div>
-  );
+          <div>
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 border border-line bg-paper flex items-center justify-center shrink-0">
+                <span className="text-[8px] uppercase tracking-wide text-mute/60">Crest</span>
+              </div>
+              <div>
+                <div className="font-serif text-base sm:text-lg text-navy leading-tight">{fixture?.opponent ?? "Opposition"}</div>
+                <div className="text-[9px] uppercase tracking-[0.18em] text-mute">Away</div>
+              </div>
+            </div>
+            {oppositionLines.length > 0 ? (
+              <table className="w-full">
+                <tbody>
+                  {oppositionLines.map((line, i) => {
+                    const match = line.match(/^(\d+)\s+(.+)$/);
+                    return (
+                      <tr key={i} className="border-b border-line">
+                        <td className="py-1.5 sm:py-2 pr-3 tabular-nums text-mute text-xs sm:text-sm w-7 sm:w-8">{match ? match[1] : i + 1}</td>
+                        <td className="py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-navy">{match ? match[2] : line}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <div>
+                {Array.from({ length: 16 }, (_, i) => (
+                  <div key={i} className="flex items-center gap-3 border-b border-line py-1.5 sm:py-2">
+                    <span className="text-mute text-xs sm:text-sm tabular-nums w-7 sm:w-8 shrink-0">{i + 1}</span>
+                    <div className="flex-1 h-px bg-line/50" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </PageScroll>
+    ),
+  });
+
+  // ── 13. NCEL mandatory ads ────────────────────────────────────────────────────
+  if (isNcelGame) {
+    pages.push({ id: "ncel-macron", el: <NcelAdPage src="/macron-banner.png" alt="Macron Sports Hub Wakefield — Official Kit Supplier" dark /> });
+    pages.push({ id: "ncel-rcuk", el: <NcelAdPage src="/ncel/resuscitationcounciluklogo.jpg" alt="Resuscitation Council UK" /> });
+    pages.push({ id: "ncel-pst", el: <NcelAdPage src="/ncel/pstsport.png" alt="PST Sport" /> });
+  }
+
+  // ── 14. Featured sponsor spotlight ───────────────────────────────────────────
+  if (featuredSponsor) {
+    pages.push({
+      id: "sponsor-spotlight",
+      el: (
+        <PageFull className="bg-navy items-center justify-center px-8 py-12">
+          <div className="absolute top-5 left-5 w-7 h-7 border-t border-l border-paper/15 pointer-events-none" />
+          <div className="absolute top-5 right-5 w-7 h-7 border-t border-r border-paper/15 pointer-events-none" />
+          <div className="absolute bottom-5 left-5 w-7 h-7 border-b border-l border-paper/15 pointer-events-none" />
+          <div className="absolute bottom-5 right-5 w-7 h-7 border-b border-r border-paper/15 pointer-events-none" />
+
+          <div className="text-[9px] uppercase tracking-[0.35em] text-sky mb-6 text-center">Proud Partner</div>
+
+          {featuredSponsor.logoFilename && (
+            <div className="bg-paper px-10 py-7 mb-7 inline-flex items-center justify-center w-64 shadow-2xl">
+              <img src={variantUrl(featuredSponsor.logoFilename, 400, "jpeg")} alt={featuredSponsor.name} className="max-h-20 max-w-full object-contain" />
+            </div>
+          )}
+
+          <h3
+            className="font-serif text-paper text-center mb-4"
+            style={{ fontSize: "clamp(1.75rem, 5vw, 3rem)" }}
+          >
+            {featuredSponsor.name}
+          </h3>
+          <p className="text-paper/45 text-center max-w-xs text-xs sm:text-sm leading-relaxed mb-7">
+            Proud partner of Doncaster City FC, supporting the club and the local community.
+          </p>
+          {featuredSponsor.url && (
+            <a href={featuredSponsor.url} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 border border-paper/25 text-paper px-6 py-2.5 text-[10px] font-semibold uppercase tracking-widest hover:bg-paper/10 transition-colors">
+              Visit {featuredSponsor.name} ↗
+            </a>
+          )}
+
+          <div className="absolute bottom-5 inset-x-0 flex items-center justify-center gap-3">
+            <div className="h-px w-10 bg-paper/12" />
+            <Crest className="h-4 w-4 text-paper/18" />
+            <div className="h-px w-10 bg-paper/12" />
+          </div>
+        </PageFull>
+      ),
+    });
+  }
+
+  // ── 15. Back cover ────────────────────────────────────────────────────────────
+  pages.push({
+    id: "back",
+    el: (
+      <PageFull className="bg-navy items-center justify-center text-center px-8">
+        {/* Large ghost crest */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+          <Crest className="w-3/4 max-w-xs h-auto text-paper/[0.04]" />
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center gap-4">
+          <Crest className="h-14 w-14 sm:h-16 sm:w-16 text-paper opacity-55" />
+          <div className="h-px w-12 bg-paper/15" />
+          <div className="font-serif text-paper text-2xl sm:text-3xl">Doncaster City FC</div>
+          <div className="text-[9px] uppercase tracking-[0.3em] text-paper/30">Official Digital Programme</div>
+          <div className="text-paper/20 text-xs mt-1">doncastercity-fc.com</div>
+        </div>
+      </PageFull>
+    ),
+  });
+
+  return <BrochureLayout pages={pages} isPreview={isPreview} progId={prog.id} />;
 }

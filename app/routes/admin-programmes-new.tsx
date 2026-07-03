@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, eq, gte, not, like } from "drizzle-orm";
 import { Form, redirect } from "react-router";
 import type { Route } from "./+types/admin-programmes-new";
 import { db } from "~/db.server";
@@ -12,11 +12,18 @@ export function meta(_: Route.MetaArgs) {
 
 export async function loader({ request }: Route.LoaderArgs) {
   await requireAdmin(request);
+  const currentSeason = new Date("2026-04-16");
   const upcomingFixtures = await db
     .select({ id: fixtures.id, opponent: fixtures.opponent, homeAway: fixtures.homeAway, kickoff: fixtures.kickoff, competition: fixtures.competition })
     .from(fixtures)
-    .orderBy(desc(fixtures.kickoff))
-    .limit(30);
+    .where(
+      and(
+        eq(fixtures.homeAway, "home"),
+        gte(fixtures.kickoff, currentSeason),
+        not(like(fixtures.competition, "%riendly%")),
+      )
+    )
+    .orderBy(asc(fixtures.kickoff));
   return { fixtures: upcomingFixtures };
 }
 

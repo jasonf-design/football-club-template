@@ -89,16 +89,16 @@ export async function fetchTeamFixtures(): Promise<FwpMatch[]> {
 
 // --- mapping FWP → our schema ---
 
-// FWP uses status.short codes. Anything not recognised falls back to a
-// best guess based on whether the match has scores.
+// FWP uses status.short codes. When the field is unrecognised (FWP sometimes
+// puts the kickoff time there, e.g. "7.30pm") default to "scheduled" — a
+// completed match will always have FT/AET/PEN so we never need the score fallback.
 function mapStatus(m: FwpMatch): Fixture["status"] {
   const s = m.status.short.toUpperCase();
   if (s === "FT" || s === "AET" || s === "PEN") return "completed";
   if (s === "P-P" || s === "POST" || s === "PP") return "postponed";
   if (s === "CANC" || s === "ABAN") return "cancelled";
   if (s === "HT" || s === "1H" || s === "2H" || s === "LIVE") return "in_progress";
-  const hasScore = m["home-team"].score != null && m["away-team"].score != null;
-  return hasScore ? "completed" : "scheduled";
+  return "scheduled";
 }
 
 // Combines "YYYY-MM-DD" + "HH:MM" into a Date interpreted as the server's
@@ -123,6 +123,8 @@ type Mapped = {
 function mapMatch(m: FwpMatch, ourTeamId: number): Mapped {
   const isHome = m["home-team"].id === ourTeamId;
   const opponentSide = isHome ? m["away-team"] : m["home-team"];
+  const status = mapStatus(m);
+  const hasResult = status === "completed" || status === "in_progress";
   return {
     externalId: String(m.id),
     competition: m.competition.name,
@@ -130,9 +132,9 @@ function mapMatch(m: FwpMatch, ourTeamId: number): Mapped {
     homeAway: isHome ? "home" : "away",
     kickoff: parseKickoff(m),
     venue: m.venue?.trim() || null,
-    status: mapStatus(m),
-    homeScore: m["home-team"].score ?? null,
-    awayScore: m["away-team"].score ?? null,
+    status,
+    homeScore: hasResult ? (m["home-team"].score ?? null) : null,
+    awayScore: hasResult ? (m["away-team"].score ?? null) : null,
   };
 }
 
