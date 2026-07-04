@@ -3,13 +3,13 @@ import { eq, asc, inArray } from "drizzle-orm";
 import { Form, Link, useActionData } from "react-router";
 import type { Route } from "./+types/programme";
 import { db } from "~/db.server";
-import { fixtures, media, players, programmeInterest, programmes, sponsors } from "../../db/schema";
+import { fixtures, media, players, coachingStaff, programmeInterest, programmes, sponsors } from "../../db/schema";
 import { variantUrl, fallbackFormatFor } from "~/lib/uploads";
 import { readLeagueTable } from "~/lib/fwp.server";
 import { sendProgrammeInterestNotification } from "~/lib/email.server";
 import { requireAdmin } from "~/lib/session.server";
 import { Crest } from "~/components/Crest";
-import { pitchSponsors } from "~/lib/pitchSponsors";
+import { pitchSponsors, getSponsorAt } from "~/lib/pitchSponsors";
 import { z } from "zod";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -101,6 +101,12 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     .select({ id: fixtures.id, opponent: fixtures.opponent, homeAway: fixtures.homeAway, kickoff: fixtures.kickoff, competition: fixtures.competition, status: fixtures.status, homeScore: fixtures.homeScore, awayScore: fixtures.awayScore })
     .from(fixtures).orderBy(asc(fixtures.kickoff));
 
+  const firstTeamStaff = await db
+    .select({ id: coachingStaff.id, name: coachingStaff.name, role: coachingStaff.role })
+    .from(coachingStaff)
+    .where(eq(coachingStaff.team, "first"))
+    .orderBy(asc(coachingStaff.sortOrder), asc(coachingStaff.name));
+
   const leagueSnapshot = await readLeagueTable();
 
   const isNcelGame = fixture
@@ -118,6 +124,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       ...p,
       sponsor1LogoFilename: p.sponsor1LogoMediaId ? (sponsorLogoMap.get(p.sponsor1LogoMediaId) ?? null) : null,
     })),
+    firstTeamStaff,
     allFixtures, leagueSnapshot, isNcelGame, isLeagueCup, isPreview,
   };
 }
@@ -394,7 +401,7 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
   const {
     prog, fixture, kickoff, freeFrom, isLocked, coverImage, coverSponsor,
     featuredSponsor, featuredPlayer, platinumSponsors, goldSponsors, silverSponsors,
-    firstTeamPlayers, allFixtures, leagueSnapshot, isNcelGame, isLeagueCup, isPreview,
+    firstTeamPlayers, firstTeamStaff, allFixtures, leagueSnapshot, isNcelGame, isLeagueCup, isPreview,
   } = loaderData;
 
   const actionData = useActionData<typeof action>();
@@ -492,10 +499,10 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
           </div>
           {isNcelGame && (
             <div className="flex items-center gap-3">
-              <img src="/ncel/ncefl%20logo.png" alt="NCEL" className="h-6 sm:h-7 w-auto object-contain brightness-0 invert opacity-55" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-              <img src="/ncel/MacronLogoPos.png" alt="Macron" className="h-5 sm:h-6 w-auto object-contain brightness-0 invert opacity-50" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              <img src="/ncel/ncefl%20logo.png" alt="NCEL" className="h-6 sm:h-7 w-auto object-contain opacity-70" style={{ mixBlendMode: "screen" }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              <img src="/ncel/MacronLogoPos.png" alt="Macron" className="h-5 sm:h-6 w-auto object-contain opacity-65" style={{ mixBlendMode: "screen" }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
               {isLeagueCup && (
-                <img src="/ncel/jcpconstruction_logo_whitebg.jpg" alt="JCP Construction" className="h-6 w-auto object-contain p-0.5" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                <img src="/ncel/jcpconstruction_logo_whitebg.jpg" alt="JCP Construction" className="h-6 w-auto object-contain opacity-65" style={{ mixBlendMode: "screen" }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
               )}
             </div>
           )}
@@ -553,7 +560,12 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
           <div className="relative z-10 border-t border-paper/10 px-5 py-3 sm:px-8 flex items-center gap-3 shrink-0 bg-navy/55 backdrop-blur-sm">
             <span className="text-[8px] uppercase tracking-[0.25em] text-paper/32 shrink-0">In association with</span>
             {coverSponsor.logoFilename
-              ? <img src={variantUrl(coverSponsor.logoFilename, 240, "jpeg")} alt={coverSponsor.name} className="h-7 w-auto max-w-[90px] object-contain brightness-0 invert opacity-60" />
+              ? <img
+                  src={variantUrl(coverSponsor.logoFilename, 240, fallbackFormatFor(coverSponsor.logoFilename))}
+                  alt={coverSponsor.name}
+                  className="h-7 w-auto max-w-[100px] object-contain opacity-80"
+                  style={{ mixBlendMode: "screen" }}
+                />
               : <span className="text-paper/55 text-xs font-semibold">{coverSponsor.name}</span>}
           </div>
         )}
@@ -695,52 +707,52 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
       id: "table",
       el: (
         <PageFull className="bg-paper-warm flex flex-col">
-          <div className="shrink-0 px-5 pt-5 pb-3 border-b border-line">
-            <div className="text-[8px] uppercase tracking-[0.3em] text-sky-deep font-semibold mb-0.5">
+          <div className="shrink-0 px-4 pt-3 pb-2 border-b border-line">
+            <div className="text-[7px] uppercase tracking-[0.3em] text-sky-deep font-semibold mb-0.5">
               {leagueSnapshot.data.competition?.name ?? "League"}
             </div>
-            <div className="font-serif text-navy text-lg">League table.</div>
+            <div className="font-serif text-navy text-base leading-tight">League table.</div>
           </div>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-navy text-paper text-[8px] uppercase tracking-[0.15em]">
-                  <th className="px-2 py-1.5 text-left w-7 font-semibold">#</th>
-                  <th className="px-2 py-1.5 text-left font-semibold">Club</th>
-                  <th className="px-2 py-1.5 text-center w-7 font-semibold">P</th>
-                  <th className="px-2 py-1.5 text-center w-7 font-semibold">W</th>
-                  <th className="px-2 py-1.5 text-center w-7 font-semibold">D</th>
-                  <th className="px-2 py-1.5 text-center w-7 font-semibold">L</th>
-                  <th className="px-2 py-1.5 text-center w-8 font-semibold">GD</th>
-                  <th className="px-2 py-1.5 text-center w-8 font-semibold">Pts</th>
+                <tr className="bg-navy text-paper text-[7px] uppercase tracking-[0.12em]">
+                  <th className="px-1.5 py-1 text-left w-6 font-semibold">#</th>
+                  <th className="px-1.5 py-1 text-left font-semibold">Club</th>
+                  <th className="px-1.5 py-1 text-center w-6 font-semibold">P</th>
+                  <th className="px-1.5 py-1 text-center w-6 font-semibold">W</th>
+                  <th className="px-1.5 py-1 text-center w-6 font-semibold">D</th>
+                  <th className="px-1.5 py-1 text-center w-6 font-semibold">L</th>
+                  <th className="px-1.5 py-1 text-center w-7 font-semibold">GD</th>
+                  <th className="px-1.5 py-1 text-center w-7 font-semibold">Pts</th>
                 </tr>
               </thead>
               <tbody>
                 {leagueSnapshot.data.teams.map((team, i) => {
                   const isDcfc = team.name.toLowerCase().includes("doncaster city");
                   return (
-                    <tr key={team.id} className={["border-b border-line/50", isDcfc ? "bg-sky/10" : i % 2 === 0 ? "bg-paper/60" : ""].join(" ")}>
-                      <td className="px-2 py-1.5 text-[9px] text-mute tabular-nums">{team.position}</td>
-                      <td className="px-2 py-1.5 text-[10px]">
+                    <tr key={team.id} className={["border-b border-line/40", isDcfc ? "bg-sky/10" : i % 2 === 0 ? "bg-paper/60" : ""].join(" ")}>
+                      <td className="px-1.5 py-1 text-[8px] text-mute tabular-nums">{team.position}</td>
+                      <td className="px-1.5 py-1 text-[8px]">
                         <span className={isDcfc ? "text-navy font-semibold" : "text-ink"}>{team.name}</span>
-                        {isDcfc && <span className="ml-1 text-[7px] uppercase tracking-wide text-sky-deep bg-sky/20 px-1 py-0.5">Us</span>}
+                        {isDcfc && <span className="ml-1 text-[6px] uppercase tracking-wide text-sky-deep bg-sky/20 px-0.5">Us</span>}
                       </td>
-                      <td className="px-2 py-1.5 text-center text-[9px] tabular-nums text-mute">{team["all-matches"].played}</td>
-                      <td className="px-2 py-1.5 text-center text-[9px] tabular-nums text-mute">{team["all-matches"].won}</td>
-                      <td className="px-2 py-1.5 text-center text-[9px] tabular-nums text-mute">{team["all-matches"].drawn}</td>
-                      <td className="px-2 py-1.5 text-center text-[9px] tabular-nums text-mute">{team["all-matches"].lost}</td>
-                      <td className="px-2 py-1.5 text-center text-[9px] tabular-nums text-mute">
+                      <td className="px-1.5 py-1 text-center text-[8px] tabular-nums text-mute">{team["all-matches"].played}</td>
+                      <td className="px-1.5 py-1 text-center text-[8px] tabular-nums text-mute">{team["all-matches"].won}</td>
+                      <td className="px-1.5 py-1 text-center text-[8px] tabular-nums text-mute">{team["all-matches"].drawn}</td>
+                      <td className="px-1.5 py-1 text-center text-[8px] tabular-nums text-mute">{team["all-matches"].lost}</td>
+                      <td className="px-1.5 py-1 text-center text-[8px] tabular-nums text-mute">
                         {team["all-matches"]["goal-difference"] > 0 ? "+" : ""}{team["all-matches"]["goal-difference"]}
                       </td>
-                      <td className="px-2 py-1.5 text-center text-[9px] tabular-nums font-bold text-navy">{team["total-points"]}</td>
+                      <td className="px-1.5 py-1 text-center text-[8px] tabular-nums font-bold text-navy">{team["total-points"]}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-          <div className="shrink-0 bg-navy/4 border-t border-line px-4 py-2 flex items-center justify-between">
-            <Crest className="h-3.5 w-3.5 text-navy/20" />
+          <div className="shrink-0 bg-navy/4 border-t border-line px-4 py-1.5 flex items-center justify-between">
+            <Crest className="h-3 w-3 text-navy/20" />
             <span className="text-[7px] uppercase tracking-[0.2em] text-mute/60">doncastercity-fc.com</span>
           </div>
         </PageFull>
@@ -752,6 +764,9 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
   const SPONSOR_DESCRIPTIONS: Record<string, string> = {
     "Smokeys": "An award-winning grill serving quality food made with care. A third-generation family business with a five-star food hygiene rating and a 2025 Good Food Award — they believe fast food can be done properly, with great ingredients, every time.",
     "Visit Bawtry": "A community platform celebrating the independent businesses and attractions of one of South Yorkshire's most charming market towns. From great restaurants and independent shops to events and entertainment, Visit Bawtry connects locals and visitors with the very best the town has to offer.",
+    "Green Electrical & Plumbing Supplies": "A comprehensive trade supplier serving the local community with an extensive range of bathroom fixtures, heating systems, plumbing materials, and electrical products for professionals and homeowners alike. As a member of The IPG, they combine local accessibility with industry-wide support — the team to call when you need to get the job done.",
+    "Alt Rubber and Plastics": "A UK-based manufacturer specialising in high-quality polyurethane and polyethylene components for industries including mining, offshore, and automotive. This family-run business delivers bespoke solutions from design to finished component, with precise engineering and efficient turnaround times without ever compromising on quality.",
+    "Eland Cables": "A leading European supplier of cables and cable accessories, trusted by industries from renewable energy to rail, data centres, and oil & gas. Backed by world-class testing facilities and a 99% on-time delivery record, Eland Cables combines deep technical expertise with an unwavering commitment to quality.",
   };
 
   for (let gi = 0; gi < goldSponsors.length; gi += 2) {
@@ -826,60 +841,75 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
     pages.push({
       id: "player",
       el: (
-        <PageFull className="bg-navy-deep">
-          {/* Full-bleed player photo */}
-          {featuredPlayer.photoFilename && (
-            <img
-              src={variantUrl(featuredPlayer.photoFilename, 800, "jpeg")}
-              alt={featuredPlayer.name}
-              className="absolute inset-0 h-full w-full object-cover object-top"
-              style={{ opacity: 0.55 }}
-            />
-          )}
-          {!featuredPlayer.photoFilename && (
-            <div className="absolute inset-0 flex items-center justify-end pr-8 pointer-events-none select-none">
-              <Crest className="h-3/4 w-auto text-paper/[0.05]" />
-            </div>
-          )}
+        <PageFull className="bg-navy-deep flex flex-row">
+          {/* Left: tall portrait photo */}
+          <div className="w-[52%] relative overflow-hidden shrink-0">
+            {featuredPlayer.photoFilename ? (
+              <img
+                src={variantUrl(featuredPlayer.photoFilename, 600, "jpeg")}
+                alt={featuredPlayer.name}
+                className="absolute inset-0 h-full w-full object-cover object-top"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-navy to-navy-deep flex items-center justify-center">
+                <Crest className="h-2/3 w-auto text-paper/8" />
+              </div>
+            )}
+            {/* Fade right edge into dark bg */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-navy-deep/80" />
+            {/* Fade bottom */}
+            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-navy-deep to-transparent" />
+            {/* Position label bottom-left */}
+            {(featuredPlayer.position || featuredPlayer.position2) && (
+              <div className="absolute bottom-4 left-4 text-[8px] uppercase tracking-[0.2em] text-sky/70 font-semibold">
+                {[featuredPlayer.position, featuredPlayer.position2].filter(Boolean).join(" · ")}
+              </div>
+            )}
+          </div>
 
-          {/* Left gradient so text is readable over image */}
-          <div className="absolute inset-0 bg-gradient-to-r from-navy-deep via-navy-deep/70 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-navy-deep/60 via-transparent to-navy-deep/40" />
+          {/* Right: player info — name badge at top */}
+          <div className="flex-1 flex flex-col px-4 py-5 min-w-0">
+            {/* Eyebrow */}
+            <div className="text-[7px] uppercase tracking-[0.3em] text-sky font-semibold mb-3">Player Spotlight</div>
 
-          {/* Content — left-aligned, vertically centered */}
-          <div className="relative z-10 flex flex-col justify-center flex-1 px-6 py-10 sm:px-12 sm:py-14 max-w-lg">
-            <div className="text-[9px] uppercase tracking-[0.3em] text-sky mb-2 font-semibold">Player spotlight</div>
-
+            {/* Ghost shirt number */}
             {featuredPlayer.shirtNumber && (
               <div
-                className="font-serif text-paper/8 leading-none select-none -mb-4 sm:-mb-6"
-                style={{ fontSize: "clamp(5rem, 18vw, 10rem)" }}
+                className="text-paper/[0.07] leading-none select-none -mb-3"
+                style={{ fontFamily: "var(--font-display)", fontSize: "clamp(3.5rem, 14vw, 7rem)" }}
                 aria-hidden="true"
               >
                 {featuredPlayer.shirtNumber}
               </div>
             )}
 
-            {(featuredPlayer.position || featuredPlayer.position2) && (
-              <div className="text-sky/75 text-[10px] uppercase tracking-[0.2em] mb-2">
-                {[featuredPlayer.position, featuredPlayer.position2].filter(Boolean).join(" · ")}
-              </div>
-            )}
-
+            {/* Name badge */}
             <h2
-              className="font-serif text-paper leading-tight mb-5"
-              style={{ fontSize: "clamp(2.2rem, 7vw, 4.5rem)" }}
+              className="font-serif text-paper leading-tight mb-4"
+              style={{ fontSize: "clamp(1.3rem, 4vw, 2rem)" }}
             >
               {featuredPlayer.name}
             </h2>
 
-            {featuredPlayer.bio && (
-              <div className="space-y-3">
-                {featuredPlayer.bio.split("\n\n").slice(0, 3).map((para, i) => (
-                  <p key={i} className="text-paper/60 text-sm sm:text-base leading-relaxed">{para}</p>
+            {/* Divider */}
+            <div className="w-8 h-px bg-sky/40 mb-4" />
+
+            {/* Bio */}
+            {featuredPlayer.bio ? (
+              <div className="space-y-2.5">
+                {featuredPlayer.bio.split("\n\n").slice(0, 4).map((para, i) => (
+                  <p key={i} className="text-paper/55 text-[10px] leading-relaxed">{para}</p>
                 ))}
               </div>
+            ) : (
+              <p className="text-paper/30 text-[10px] italic">Bio coming soon.</p>
             )}
+
+            {/* Footer */}
+            <div className="mt-auto flex items-center gap-2 pt-4">
+              <Crest className="h-3.5 w-3.5 text-paper/15" />
+              <span className="text-[7px] uppercase tracking-[0.2em] text-paper/15">Doncaster City FC</span>
+            </div>
           </div>
         </PageFull>
       ),
@@ -946,73 +976,107 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
   pages.push({
     id: "pitch",
     el: (
-      <PageFull className="bg-navy px-6 py-10 sm:px-12 sm:py-14 justify-center">
-        {/* Subtle ghost pattern */}
-        <div className="absolute inset-0 flex items-center justify-end pr-6 sm:pr-12 pointer-events-none select-none opacity-30">
-          <svg viewBox="0 0 200 140" className="w-1/2 max-w-sm text-paper/5" fill="none" stroke="currentColor" strokeWidth="1">
-            <rect x="10" y="10" width="180" height="120" />
-            <line x1="10" y1="70" x2="190" y2="70" />
-            <circle cx="100" cy="70" r="25" />
-            <line x1="10" y1="55" x2="10" y2="85" />
-            <line x1="10" y1="55" x2="30" y2="55" />
-            <line x1="10" y1="85" x2="30" y2="85" />
-            <line x1="190" y1="55" x2="190" y2="85" />
-            <line x1="190" y1="55" x2="170" y2="55" />
-            <line x1="190" y1="85" x2="170" y2="85" />
-          </svg>
+      <PageFull className="bg-navy flex flex-col">
+        {/* Header */}
+        <div className="shrink-0 px-5 pt-5 pb-3 border-b border-paper/10">
+          <div className="text-[8px] uppercase tracking-[0.3em] text-sky font-semibold mb-0.5">Marra Falcons Stadium</div>
+          <div className="font-serif text-paper text-lg leading-tight">Sponsor a pitch square.</div>
         </div>
 
-        <div className="relative z-10 max-w-lg">
-          <SectionHeader eyebrow="Get involved" title="Sponsor a pitch square." light className="mb-6 sm:mb-8" />
-          <p className="text-paper/55 leading-relaxed text-sm sm:text-base mb-7">
-            Put your name — or your business — on the Marra Falcons Stadium pitch. Platinum, gold, and silver squares are available, placing your brand at the heart of every home match.
+        {/* Live pitch grid */}
+        <div className="flex-1 flex items-center justify-center px-4 py-3 min-h-0">
+          <div className="w-full relative" style={{ aspectRatio: "15/10", maxHeight: "100%" }}>
+            {/* Grass background */}
+            <div className="absolute inset-0" style={{ background: "linear-gradient(160deg, #1e6b30 0%, #256b34 40%, #1e6b30 100%)" }} />
+            {/* Pitch markings */}
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 150 100" preserveAspectRatio="none" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="0.7">
+              <rect x="0.5" y="0.5" width="149" height="99" />
+              <line x1="75" y1="0" x2="75" y2="100" />
+              <circle cx="75" cy="50" r="13" />
+              <circle cx="75" cy="50" r="0.8" fill="rgba(255,255,255,0.25)" stroke="none" />
+              <rect x="0" y="27" width="16" height="46" />
+              <rect x="134" y="27" width="16" height="46" />
+              <rect x="0" y="36" width="5.5" height="28" />
+              <rect x="144.5" y="36" width="5.5" height="28" />
+            </svg>
+            {/* 15×10 sponsor grid */}
+            <div
+              className="absolute inset-0 grid"
+              style={{ gridTemplateColumns: "repeat(15, 1fr)", gridTemplateRows: "repeat(10, 1fr)" }}
+            >
+              {Array.from({ length: 10 }, (_, ri) =>
+                Array.from({ length: 15 }, (_, ci) => {
+                  const row = ri + 1;
+                  const col = ci + 1;
+                  const sp = getSponsorAt(row, col);
+                  return (
+                    <div
+                      key={`${row}-${col}`}
+                      className={[
+                        "border border-white/8 flex items-center justify-center overflow-hidden",
+                        sp
+                          ? sp.tier === "platinum" ? "bg-yellow-300/20"
+                          : sp.tier === "gold" ? "bg-amber-300/15"
+                          : "bg-sky/15"
+                          : "",
+                      ].join(" ")}
+                    >
+                      {sp && sp.logo && (
+                        <img src={sp.logo} alt={sp.name} className="w-full h-full object-contain p-px opacity-85" />
+                      )}
+                      {sp && !sp.logo && (
+                        <span className="text-white/80 font-bold leading-tight text-center px-px"
+                              style={{ fontSize: "3.5px" }}>
+                          {sp.name}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Write-up + CTA */}
+        <div className="shrink-0 px-5 pb-4 space-y-3">
+          <p className="text-paper/55 text-[9px] leading-relaxed">
+            Every square on the Marra Falcons Stadium pitch can carry your name or business. Revenue goes directly into the club — helping us develop our players, improve our facilities, and invest in our future. Platinum, gold, and silver squares are available.
           </p>
-
-          <a href="/pitch"
-            className="inline-flex items-center gap-2 bg-sky text-navy-deep px-6 py-3 font-semibold text-xs sm:text-sm uppercase tracking-wide hover:bg-paper transition-colors mb-10">
-            View available squares →
+          <a
+            href="/pitch"
+            className="inline-flex items-center gap-2 bg-sky text-navy-deep px-4 py-1.5 font-semibold text-[9px] uppercase tracking-wide hover:bg-paper transition-colors"
+          >
+            Sponsor a square →
           </a>
+        </div>
 
-          {pitchSponsors.length > 0 && (
-            <>
-              <div className="text-[9px] uppercase tracking-[0.22em] text-sky mb-4 font-semibold">Current pitch sponsors</div>
-              <div className="space-y-2">
-                {pitchSponsors.map((ps) => (
-                  <div key={ps.id} className="flex items-center justify-between border border-paper/10 px-4 py-2.5 hover:border-paper/20 transition-colors">
-                    <div>
-                      <div className="text-paper text-sm font-medium">{ps.name}</div>
-                      <div className="text-paper/35 text-[9px] uppercase tracking-wide mt-0.5">{ps.squares.length} square{ps.squares.length !== 1 ? "s" : ""}</div>
-                    </div>
-                    <div className={["text-[8px] uppercase tracking-wide px-2 py-0.5 font-semibold",
-                      ps.tier === "platinum" ? "bg-yellow-500/15 text-yellow-300" :
-                      ps.tier === "gold" ? "bg-amber-500/15 text-amber-300" :
-                      "bg-paper/8 text-paper/45"].join(" ")}>
-                      {ps.tier}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+        {/* Footer */}
+        <div className="shrink-0 border-t border-paper/10 px-4 py-1.5 flex items-center justify-between">
+          <Crest className="h-3 w-3 text-paper/20" />
+          <span className="text-[7px] uppercase tracking-[0.2em] text-paper/20">doncastercity-fc.com</span>
         </div>
       </PageFull>
     ),
   });
 
-  // ── 11. Squad pages — two non-scrolling brochure pages ───────────────────────
+  // ── 11. Squad pages — two non-scrolling pages, 10 players each ───────────────
   {
     const squadSorted = firstTeamPlayers
       .slice()
       .sort((a, b) => (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99));
-    const half = Math.ceil(squadSorted.length / 2);
 
-    const PlayerEntry = ({ p }: { p: typeof squadSorted[number] }) => (
-      <div className="flex gap-2.5 px-3 py-2 border-b border-line/60 last:border-0">
-        {/* Thumbnail */}
-        <div className="w-9 h-[52px] shrink-0 relative overflow-hidden bg-navy/8">
+    // Always spread evenly across exactly 2 pages (5 per column, 10 per page)
+    const page1 = squadSorted.slice(0, 10);
+    const page2 = squadSorted.slice(10, 20);
+
+    const PlayerCard = ({ p }: { p: typeof squadSorted[number] }) => (
+      <div className="flex gap-2 px-2.5 py-1.5 border-b border-line/50 last:border-0">
+        {/* Small portrait photo */}
+        <div className="w-8 h-[46px] shrink-0 relative overflow-hidden bg-navy/8 rounded-sm">
           {p.photoFilename ? (
             <img
-              src={variantUrl(p.photoFilename, 120, "jpeg")}
+              src={variantUrl(p.photoFilename, 120, fallbackFormatFor(p.photoFilename))}
               alt={p.name}
               loading="lazy"
               decoding="async"
@@ -1020,82 +1084,65 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
             />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-navy to-navy-deep flex items-center justify-center">
-              {p.shirtNumber && (
-                <span style={{ fontFamily: "var(--font-display)", fontSize: "1.1rem" }} className="text-paper/15 leading-none">
+              {p.shirtNumber != null && (
+                <span style={{ fontFamily: "var(--font-display)", fontSize: "1rem" }} className="text-paper/15 leading-none">
                   {p.shirtNumber}
                 </span>
               )}
             </div>
           )}
         </div>
-        {/* Text */}
+        {/* Text info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-1.5">
+          <div className="flex items-baseline gap-1 leading-none mb-0.5">
             {p.shirtNumber != null && (
-              <span
-                style={{ fontFamily: "var(--font-display)", fontSize: "0.85rem" }}
-                className="text-navy/20 tabular-nums shrink-0 leading-none"
-              >
+              <span style={{ fontFamily: "var(--font-display)", fontSize: "0.7rem" }} className="text-navy/22 tabular-nums shrink-0">
                 {p.shirtNumber}
               </span>
             )}
-            <span className="text-[11px] font-semibold text-navy leading-tight truncate">{p.name}</span>
+            <span className="text-[10px] font-semibold text-navy truncate leading-tight">{p.name}</span>
           </div>
           {p.position && (
-            <div className="text-[8px] uppercase tracking-[0.14em] text-mute mt-0.5 leading-none">{p.position}</div>
+            <div className="text-[7px] uppercase tracking-[0.12em] text-mute leading-none mb-0.5">{p.position}</div>
           )}
           {p.bio && (
-            <p className="text-[9px] text-ink/60 leading-snug mt-0.5 line-clamp-2">{p.bio}</p>
+            <p className="text-[8px] text-ink/55 leading-snug line-clamp-2">{p.bio}</p>
           )}
           {p.sponsor1Name && (
             p.sponsor1Url ? (
-              <a
-                href={p.sponsor1Url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[8px] text-sky-deep underline underline-offset-2 truncate block mt-0.5 leading-tight"
-              >
-                Spon: {p.sponsor1Name} ↗
+              <a href={p.sponsor1Url} target="_blank" rel="noopener noreferrer"
+                className="text-[7px] text-sky-deep underline underline-offset-1 truncate block leading-tight mt-0.5">
+                ★ {p.sponsor1Name}
               </a>
             ) : (
-              <span className="text-[8px] text-mute/70 truncate block mt-0.5 leading-tight">
-                Spon: {p.sponsor1Name}
-              </span>
+              <span className="text-[7px] text-mute/60 truncate block leading-tight mt-0.5">★ {p.sponsor1Name}</span>
             )
           )}
         </div>
       </div>
     );
 
-    const SquadPageHeader = ({ label }: { label: string }) => (
-      <div className="shrink-0 px-5 pt-5 pb-3 border-b border-line flex items-end justify-between">
+    const SquadHeader = ({ label }: { label: string }) => (
+      <div className="shrink-0 px-4 pt-3 pb-2 border-b border-line flex items-end justify-between">
         <div>
-          <div className="text-[8px] uppercase tracking-[0.3em] text-sky-deep font-semibold mb-0.5">Doncaster City FC</div>
-          <div className="font-serif text-navy text-lg leading-tight">The Squad</div>
+          <div className="text-[7px] uppercase tracking-[0.3em] text-sky-deep font-semibold mb-0.5">Doncaster City FC</div>
+          <div className="font-serif text-navy text-base leading-tight">The Squad</div>
         </div>
-        <div className="text-[8px] uppercase tracking-[0.2em] text-mute">{label}</div>
+        <div className="text-[7px] uppercase tracking-[0.2em] text-mute">{label}</div>
       </div>
     );
-
-    const makeCols = (group: typeof squadSorted) => {
-      const mid = Math.ceil(group.length / 2);
-      return [group.slice(0, mid), group.slice(mid)];
-    };
-
-    const [p1a, p1b] = makeCols(squadSorted.slice(0, half));
-    const [p2a, p2b] = makeCols(squadSorted.slice(half));
 
     pages.push({
       id: "squad-1",
       el: (
-        <PageFull className="bg-paper">
-          <SquadPageHeader label="Page 1 of 2" />
+        <PageFull className="bg-paper flex flex-col">
+          <SquadHeader label="1 of 2" />
           <div className="flex-1 grid grid-cols-2 divide-x divide-line min-h-0 overflow-hidden">
-            <div className="overflow-hidden">{p1a.map((p) => <PlayerEntry key={p.id} p={p} />)}</div>
-            <div className="overflow-hidden">{p1b.map((p) => <PlayerEntry key={p.id} p={p} />)}</div>
+            <div className="overflow-hidden">{page1.slice(0, 5).map((p) => <PlayerCard key={p.id} p={p} />)}</div>
+            <div className="overflow-hidden">{page1.slice(5, 10).map((p) => <PlayerCard key={p.id} p={p} />)}</div>
           </div>
-          <div className="shrink-0 bg-navy/4 border-t border-line px-4 py-2 flex items-center justify-between">
-            <Crest className="h-3.5 w-3.5 text-navy/20" />
+          <div className="shrink-0 border-t border-line px-4 py-1.5 flex items-center justify-between">
+            <Crest className="h-3 w-3 text-navy/20" />
             <span className="text-[7px] uppercase tracking-[0.2em] text-mute/60">doncastercity-fc.com</span>
           </div>
         </PageFull>
@@ -1105,14 +1152,14 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
     pages.push({
       id: "squad-2",
       el: (
-        <PageFull className="bg-paper">
-          <SquadPageHeader label="Page 2 of 2" />
+        <PageFull className="bg-paper flex flex-col">
+          <SquadHeader label="2 of 2" />
           <div className="flex-1 grid grid-cols-2 divide-x divide-line min-h-0 overflow-hidden">
-            <div className="overflow-hidden">{p2a.map((p) => <PlayerEntry key={p.id} p={p} />)}</div>
-            <div className="overflow-hidden">{p2b.map((p) => <PlayerEntry key={p.id} p={p} />)}</div>
+            <div className="overflow-hidden">{page2.slice(0, 5).map((p) => <PlayerCard key={p.id} p={p} />)}</div>
+            <div className="overflow-hidden">{page2.slice(5, 10).map((p) => <PlayerCard key={p.id} p={p} />)}</div>
           </div>
-          <div className="shrink-0 bg-navy/4 border-t border-line px-4 py-2 flex items-center justify-between">
-            <Crest className="h-3.5 w-3.5 text-navy/20" />
+          <div className="shrink-0 border-t border-line px-4 py-1.5 flex items-center justify-between">
+            <Crest className="h-3 w-3 text-navy/20" />
             <span className="text-[7px] uppercase tracking-[0.2em] text-mute/60">doncastercity-fc.com</span>
           </div>
         </PageFull>
@@ -1157,33 +1204,50 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
               .slice()
               .sort((a, b) => (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99))
               .map((p) => (
-                <div key={p.id} className="flex items-center border-b border-line/70 px-3 py-1 gap-2.5">
+                <div key={p.id} className="flex items-center border-b border-line/60 px-2.5 py-0.5 gap-2">
                   <span
-                    className="text-navy/25 tabular-nums shrink-0 text-right leading-none select-none"
-                    style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", width: "1.5rem" }}
+                    className="text-navy/22 tabular-nums shrink-0 text-right leading-none select-none"
+                    style={{ fontFamily: "var(--font-display)", fontSize: "1rem", width: "1.25rem" }}
                   >
                     {p.shirtNumber ?? "—"}
                   </span>
                   <div className="min-w-0">
-                    <div className="text-[11px] font-semibold text-navy leading-tight truncate">{p.name}</div>
+                    <div className="text-[10px] font-semibold text-navy leading-tight truncate">{p.name}</div>
                     {p.position && (
-                      <div className="text-[8px] uppercase tracking-[0.14em] text-mute leading-none mt-0.5">{p.position}</div>
+                      <div className="text-[7px] uppercase tracking-[0.1em] text-mute leading-none">{p.position}</div>
                     )}
                   </div>
                 </div>
               ))}
+            {/* Management/Staff */}
+            {firstTeamStaff.length > 0 && (
+              <>
+                <div className="px-2.5 py-1 bg-navy/5 border-y border-line/60">
+                  <div className="text-[7px] uppercase tracking-[0.2em] text-mute font-semibold">Management</div>
+                </div>
+                {firstTeamStaff.map((s) => (
+                  <div key={s.id} className="flex items-center border-b border-line/60 px-2.5 py-0.5 gap-2">
+                    <span className="text-navy/20 shrink-0" style={{ width: "1.25rem" }} />
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-semibold text-navy leading-tight truncate">{s.name}</div>
+                      <div className="text-[7px] uppercase tracking-[0.1em] text-mute leading-none">{s.role}</div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
 
           {/* ── Opposition ── */}
           <div>
             {/* Column header */}
-            <div className="flex items-center gap-2.5 px-3 py-3 bg-navy/5 border-b border-line">
-              <div className="h-7 w-7 border border-line/80 bg-paper-warm flex items-center justify-center shrink-0">
-                <span className="text-[6px] uppercase tracking-wide text-mute/50 text-center leading-tight">Away<br/>Crest</span>
+            <div className="flex items-center gap-2 px-2.5 py-2 bg-navy/5 border-b border-line shrink-0">
+              <div className="h-6 w-6 border border-line/80 bg-paper-warm flex items-center justify-center shrink-0">
+                <span className="text-[5px] uppercase tracking-wide text-mute/50 text-center leading-tight">Away</span>
               </div>
               <div>
-                <div className="font-semibold text-navy text-xs leading-tight">{fixture?.opponent ?? "Opposition"}</div>
-                <div className="text-[8px] uppercase tracking-[0.18em] text-mute mt-0.5">Away</div>
+                <div className="font-semibold text-navy text-[10px] leading-tight">{fixture?.opponent ?? "Opposition"}</div>
+                <div className="text-[7px] uppercase tracking-[0.15em] text-mute mt-0.5">Away</div>
               </div>
             </div>
             {/* Players */}
@@ -1191,23 +1255,23 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
               oppositionLines.map((line, i) => {
                 const m = line.match(/^(\d+)\s+(.+)$/);
                 return (
-                  <div key={i} className="flex items-center border-b border-line/70 px-3 py-1.5 gap-2.5">
+                  <div key={i} className="flex items-center border-b border-line/60 px-2.5 py-0.5 gap-2">
                     <span
-                      className="text-navy/25 tabular-nums shrink-0 text-right leading-none select-none"
-                      style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", width: "1.5rem" }}
+                      className="text-navy/22 tabular-nums shrink-0 text-right leading-none select-none"
+                      style={{ fontFamily: "var(--font-display)", fontSize: "1rem", width: "1.25rem" }}
                     >
                       {m ? m[1] : i + 1}
                     </span>
-                    <div className="text-[11px] font-semibold text-navy leading-tight truncate">{m ? m[2] : line}</div>
+                    <div className="text-[10px] font-semibold text-navy leading-tight truncate">{m ? m[2] : line}</div>
                   </div>
                 );
               })
             ) : (
               Array.from({ length: 16 }, (_, i) => (
-                <div key={i} className="flex items-center border-b border-line/70 px-3 py-1.5 gap-2.5">
+                <div key={i} className="flex items-center border-b border-line/60 px-2.5 py-0.5 gap-2">
                   <span
-                    className="text-navy/20 tabular-nums shrink-0 text-right leading-none select-none"
-                    style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", width: "1.5rem" }}
+                    className="text-navy/18 tabular-nums shrink-0 text-right leading-none select-none"
+                    style={{ fontFamily: "var(--font-display)", fontSize: "1rem", width: "1.25rem" }}
                   >
                     {i + 1}
                   </span>
@@ -1220,12 +1284,12 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
         </div>
 
         {/* Bottom credit strip */}
-        <div className="shrink-0 bg-navy/5 border-t border-line px-5 py-2 flex items-center justify-between">
+        <div className="shrink-0 bg-navy/5 border-t border-line px-4 py-1.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Crest className="h-3.5 w-3.5 text-navy/30" />
-            <span className="text-[8px] uppercase tracking-[0.2em] text-mute">Doncaster City FC</span>
+            <Crest className="h-3 w-3 text-navy/30" />
+            <span className="text-[7px] uppercase tracking-[0.2em] text-mute">Doncaster City FC</span>
           </div>
-          <span className="text-[8px] text-mute/60">doncastercity-fc.com</span>
+          <span className="text-[7px] text-mute/60">doncastercity-fc.com</span>
         </div>
 
       </PageFull>
@@ -1234,9 +1298,64 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
 
   // ── 13. NCEL mandatory ads ────────────────────────────────────────────────────
   if (isNcelGame) {
+    // Macron — kit supplier, own page
     pages.push({ id: "ncel-macron", el: <NcelAdPage src="/macron-banner.png" alt="Macron Sports Hub Wakefield — Official Kit Supplier" dark /> });
-    pages.push({ id: "ncel-rcuk", el: <NcelAdPage src="/ncel/resuscitationcounciluklogo.jpg" alt="Resuscitation Council UK" /> });
-    pages.push({ id: "ncel-pst", el: <NcelAdPage src="/ncel/pstsport.png" alt="PST Sport" /> });
+
+    // PST Sport + Resuscitation Council UK — combined page with write-ups
+    pages.push({
+      id: "ncel-partners",
+      el: (
+        <PageFull className="bg-paper flex flex-col">
+          <div className="shrink-0 px-5 pt-5 pb-3 border-b border-line">
+            <div className="text-[8px] uppercase tracking-[0.3em] text-sky-deep font-semibold mb-0.5">NCEL Partners</div>
+            <div className="font-serif text-navy text-lg leading-tight">Supporting the game.</div>
+          </div>
+
+          {/* PST Sport */}
+          <div className="flex-1 flex flex-col justify-center px-6 py-5 gap-3 border-b border-line min-h-0">
+            <div className="flex items-center gap-4">
+              <img src="/ncel/pstsport.png" alt="PST Sport" className="h-10 w-auto max-w-[100px] object-contain shrink-0"
+                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              <div>
+                <div className="font-serif text-lg text-navy leading-tight">PST Sport</div>
+                <div className="text-[8px] uppercase tracking-[0.2em] text-mute mt-0.5">NCEL Official Partner</div>
+              </div>
+            </div>
+            <p className="text-xs text-ink/70 leading-relaxed">
+              PST Sport is a leading artificial grass pitch contractor delivering world-class playing surfaces across the UK and Ireland. Providing complete turnkey solutions for clubs, schools, and sporting organisations, they handle everything from design through to construction of FIFA, World Rugby, GAA, and FIH-approved pitches. With over 500 projects completed, PST Sport ensures facilities that perform at the highest level year-round.
+            </p>
+            <a href="https://www.pstsport.com/" target="_blank" rel="noopener noreferrer"
+               className="text-[10px] text-sky-deep underline underline-offset-2 hover:text-navy transition-colors">
+              pstsport.com ↗
+            </a>
+          </div>
+
+          {/* Resuscitation Council UK */}
+          <div className="flex-1 flex flex-col justify-center px-6 py-5 gap-3 min-h-0">
+            <div className="flex items-center gap-4">
+              <img src="/ncel/resuscitationcounciluklogo.jpg" alt="Resuscitation Council UK" className="h-10 w-auto max-w-[100px] object-contain shrink-0"
+                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              <div>
+                <div className="font-serif text-lg text-navy leading-tight">Resuscitation Council UK</div>
+                <div className="text-[8px] uppercase tracking-[0.2em] text-mute mt-0.5">NCEL Official Partner</div>
+              </div>
+            </div>
+            <p className="text-xs text-ink/70 leading-relaxed">
+              The Resuscitation Council UK is dedicated to ensuring everyone has the lifesaving skills needed in an emergency — particularly vital in sport, where sudden cardiac events can occur. They provide training, guidelines, and public education in CPR and defibrillation. Quick access to a defibrillator saves lives: please familiarise yourself with the location of defibrillators at this ground.
+            </p>
+            <a href="https://www.resus.org.uk/" target="_blank" rel="noopener noreferrer"
+               className="text-[10px] text-sky-deep underline underline-offset-2 hover:text-navy transition-colors">
+              resus.org.uk ↗
+            </a>
+          </div>
+
+          <div className="shrink-0 bg-navy/4 border-t border-line px-4 py-1.5 flex items-center justify-between">
+            <Crest className="h-3 w-3 text-navy/20" />
+            <span className="text-[7px] uppercase tracking-[0.2em] text-mute/60">doncastercity-fc.com</span>
+          </div>
+        </PageFull>
+      ),
+    });
   }
 
   // ── 14. Featured sponsor spotlight ───────────────────────────────────────────
@@ -1289,9 +1408,9 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
     id: "back",
     el: (
       <PageFull className="bg-navy items-center justify-center text-center px-8">
-        {/* Large ghost crest */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <Crest className="w-3/4 max-w-xs h-auto text-paper/[0.04]" />
+        {/* Large ghost crest — behind content */}
+        <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none select-none">
+          <Crest className="w-3/4 max-w-xs h-auto text-paper/[0.03]" />
         </div>
 
         <div className="relative z-10 flex flex-col items-center gap-4">
