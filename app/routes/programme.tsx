@@ -79,6 +79,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     .select({
       id: players.id, name: players.name, position: players.position,
       shirtNumber: players.shirtNumber, photoFilename: media.filename,
+      bio: players.bio,
       sponsor1Name: players.sponsor1Name, sponsor1Url: players.sponsor1Url,
       sponsor1LogoMediaId: players.sponsor1LogoMediaId,
     })
@@ -958,72 +959,126 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
     ),
   });
 
-  // ── 11. Player sponsors grid ──────────────────────────────────────────────────
-  pages.push({
-    id: "player-sponsors",
-    el: (
-      <PageScroll className="bg-paper px-6 py-10 sm:px-8 sm:py-12">
-        <SectionHeader eyebrow="Sponsor a player" title="Player sponsors." className="mb-7" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-          {firstTeamPlayers.map((p) => (
-            <div key={p.id} className="border border-line overflow-hidden flex flex-col">
-              <div className="aspect-[3/4] bg-navy/5 relative overflow-hidden">
-                {p.photoFilename ? (
-                  <img
-                    src={variantUrl(p.photoFilename, 400, "jpeg")}
-                    alt={p.name}
-                    loading="lazy"
-                    decoding="async"
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-navy to-navy-deep flex items-center justify-center">
-                    {p.shirtNumber && <span className="font-serif text-5xl text-paper/15">{p.shirtNumber}</span>}
-                  </div>
-                )}
-                {p.shirtNumber && (
-                  <div className="absolute top-2 left-2 bg-navy text-paper text-[9px] font-bold px-1.5 py-0.5 tabular-nums">
-                    {p.shirtNumber}
-                  </div>
-                )}
-              </div>
-              <div className="p-2.5 sm:p-3 flex flex-col gap-2 flex-1">
-                <div>
-                  <div className="font-serif text-sm text-navy leading-tight">{p.name}</div>
-                  {p.position && <div className="text-[9px] uppercase tracking-[0.14em] text-mute mt-0.5">{p.position}</div>}
-                </div>
-                {p.sponsor1Name ? (
-                  <div className="mt-auto">
-                    <div className="text-[8px] uppercase tracking-[0.14em] text-mute mb-1">Sponsored by</div>
-                    {p.sponsor1Url ? (
-                      <a href={p.sponsor1Url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 border border-line bg-paper-warm/30 px-2 py-1 hover:border-sky-deep/40 hover:bg-sky/5 transition-colors">
-                        {p.sponsor1LogoFilename && (
-                          <img src={variantUrl(p.sponsor1LogoFilename, 120, "jpeg")} alt={p.sponsor1Name} className="h-4 w-auto max-w-[30px] object-contain shrink-0" />
-                        )}
-                        <span className="text-[9px] uppercase tracking-[0.1em] text-navy/65 font-semibold truncate">{p.sponsor1Name}</span>
-                      </a>
-                    ) : (
-                      <div className="flex items-center gap-1.5 border border-line bg-paper-warm/30 px-2 py-1">
-                        {p.sponsor1LogoFilename && (
-                          <img src={variantUrl(p.sponsor1LogoFilename, 120, "jpeg")} alt={p.sponsor1Name} className="h-4 w-auto max-w-[30px] object-contain shrink-0" />
-                        )}
-                        <span className="text-[9px] uppercase tracking-[0.1em] text-navy/65 font-semibold truncate">{p.sponsor1Name}</span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <a href={`/sponsor/${p.id}`} className="mt-auto block text-[8px] uppercase tracking-[0.14em] text-sky-deep border border-dashed border-sky-deep/30 px-2 py-1.5 text-center hover:bg-sky/5 transition-colors">
-                    Available to sponsor
-                  </a>
-                )}
-              </div>
+  // ── 11. Squad pages — two non-scrolling brochure pages ───────────────────────
+  {
+    const squadSorted = firstTeamPlayers
+      .slice()
+      .sort((a, b) => (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99));
+    const half = Math.ceil(squadSorted.length / 2);
+
+    const PlayerEntry = ({ p }: { p: typeof squadSorted[number] }) => (
+      <div className="flex gap-2.5 px-3 py-2 border-b border-line/60 last:border-0">
+        {/* Thumbnail */}
+        <div className="w-9 h-[52px] shrink-0 relative overflow-hidden bg-navy/8">
+          {p.photoFilename ? (
+            <img
+              src={variantUrl(p.photoFilename, 120, "jpeg")}
+              alt={p.name}
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 w-full h-full object-cover object-top"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-navy to-navy-deep flex items-center justify-center">
+              {p.shirtNumber && (
+                <span style={{ fontFamily: "var(--font-display)", fontSize: "1.1rem" }} className="text-paper/15 leading-none">
+                  {p.shirtNumber}
+                </span>
+              )}
             </div>
-          ))}
+          )}
         </div>
-      </PageScroll>
-    ),
-  });
+        {/* Text */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-1.5">
+            {p.shirtNumber != null && (
+              <span
+                style={{ fontFamily: "var(--font-display)", fontSize: "0.85rem" }}
+                className="text-navy/20 tabular-nums shrink-0 leading-none"
+              >
+                {p.shirtNumber}
+              </span>
+            )}
+            <span className="text-[11px] font-semibold text-navy leading-tight truncate">{p.name}</span>
+          </div>
+          {p.position && (
+            <div className="text-[8px] uppercase tracking-[0.14em] text-mute mt-0.5 leading-none">{p.position}</div>
+          )}
+          {p.bio && (
+            <p className="text-[9px] text-ink/60 leading-snug mt-0.5 line-clamp-2">{p.bio}</p>
+          )}
+          {p.sponsor1Name && (
+            p.sponsor1Url ? (
+              <a
+                href={p.sponsor1Url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[8px] text-sky-deep underline underline-offset-2 truncate block mt-0.5 leading-tight"
+              >
+                Spon: {p.sponsor1Name} ↗
+              </a>
+            ) : (
+              <span className="text-[8px] text-mute/70 truncate block mt-0.5 leading-tight">
+                Spon: {p.sponsor1Name}
+              </span>
+            )
+          )}
+        </div>
+      </div>
+    );
+
+    const SquadPageHeader = ({ label }: { label: string }) => (
+      <div className="shrink-0 px-5 pt-5 pb-3 border-b border-line flex items-end justify-between">
+        <div>
+          <div className="text-[8px] uppercase tracking-[0.3em] text-sky-deep font-semibold mb-0.5">Doncaster City FC</div>
+          <div className="font-serif text-navy text-lg leading-tight">The Squad</div>
+        </div>
+        <div className="text-[8px] uppercase tracking-[0.2em] text-mute">{label}</div>
+      </div>
+    );
+
+    const makeCols = (group: typeof squadSorted) => {
+      const mid = Math.ceil(group.length / 2);
+      return [group.slice(0, mid), group.slice(mid)];
+    };
+
+    const [p1a, p1b] = makeCols(squadSorted.slice(0, half));
+    const [p2a, p2b] = makeCols(squadSorted.slice(half));
+
+    pages.push({
+      id: "squad-1",
+      el: (
+        <PageFull className="bg-paper">
+          <SquadPageHeader label="Page 1 of 2" />
+          <div className="flex-1 grid grid-cols-2 divide-x divide-line min-h-0 overflow-hidden">
+            <div className="overflow-hidden">{p1a.map((p) => <PlayerEntry key={p.id} p={p} />)}</div>
+            <div className="overflow-hidden">{p1b.map((p) => <PlayerEntry key={p.id} p={p} />)}</div>
+          </div>
+          <div className="shrink-0 bg-navy/4 border-t border-line px-4 py-2 flex items-center justify-between">
+            <Crest className="h-3.5 w-3.5 text-navy/20" />
+            <span className="text-[7px] uppercase tracking-[0.2em] text-mute/60">doncastercity-fc.com</span>
+          </div>
+        </PageFull>
+      ),
+    });
+
+    pages.push({
+      id: "squad-2",
+      el: (
+        <PageFull className="bg-paper">
+          <SquadPageHeader label="Page 2 of 2" />
+          <div className="flex-1 grid grid-cols-2 divide-x divide-line min-h-0 overflow-hidden">
+            <div className="overflow-hidden">{p2a.map((p) => <PlayerEntry key={p.id} p={p} />)}</div>
+            <div className="overflow-hidden">{p2b.map((p) => <PlayerEntry key={p.id} p={p} />)}</div>
+          </div>
+          <div className="shrink-0 bg-navy/4 border-t border-line px-4 py-2 flex items-center justify-between">
+            <Crest className="h-3.5 w-3.5 text-navy/20" />
+            <span className="text-[7px] uppercase tracking-[0.2em] text-mute/60">doncastercity-fc.com</span>
+          </div>
+        </PageFull>
+      ),
+    });
+  }
 
   // ── 12. Team sheet ────────────────────────────────────────────────────────────
   pages.push({
