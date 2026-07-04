@@ -333,7 +333,7 @@ function BrochureLayout({
                 On mobile it fills the screen.
               */}
               <div
-                className="w-full h-full
+                className="w-full h-full bg-paper
                            md:h-[min(100%,780px)] md:w-auto md:aspect-[3/4]
                            md:overflow-y-auto
                            md:shadow-[0_24px_80px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.04)]"
@@ -662,14 +662,14 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
   pages.push({
     id: "fixtures",
     el: (
-      <PageScroll className="bg-paper-warm/40 px-6 py-10 sm:px-10 sm:py-12">
+      <PageScroll className="bg-paper-warm px-6 py-10 sm:px-10 sm:py-12">
         <SectionHeader eyebrow="2025/26 Season" title="Fixtures & results." className="mb-7" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-10">
           <div>
             <div className="text-[9px] uppercase tracking-[0.22em] text-mute font-semibold mb-3">Recent results</div>
             <table className="w-full">
               <tbody>
-                {allFixtures.filter((f) => f.status === "completed").slice(-7).reverse()
+                {allFixtures.filter((f) => f.status === "completed").slice(-12).reverse()
                   .map((f) => <FixtureRow key={f.id} f={{ ...f, kickoff: new Date(f.kickoff) }} isCurrent={f.id === fixture?.id} />)}
               </tbody>
             </table>
@@ -678,7 +678,7 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
             <div className="text-[9px] uppercase tracking-[0.22em] text-mute font-semibold mb-3">Coming up</div>
             <table className="w-full">
               <tbody>
-                {allFixtures.filter((f) => f.status === "scheduled").slice(0, 7)
+                {allFixtures.filter((f) => f.status === "scheduled").slice(0, 12)
                   .map((f) => <FixtureRow key={f.id} f={{ ...f, kickoff: new Date(f.kickoff) }} isCurrent={f.id === fixture?.id} />)}
               </tbody>
             </table>
@@ -693,7 +693,7 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
     pages.push({
       id: "table",
       el: (
-        <PageScroll className="bg-paper px-6 py-10 sm:px-10 sm:py-12">
+        <PageScroll className="bg-paper-warm px-6 py-10 sm:px-10 sm:py-12">
           <SectionHeader eyebrow={leagueSnapshot.data.competition?.name ?? "League"} title="League table." className="mb-7" />
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
@@ -1029,68 +1029,110 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
   pages.push({
     id: "teamsheet",
     el: (
-      <PageScroll className="bg-paper-warm/30 px-6 py-10 sm:px-10 sm:py-12">
-        <SectionHeader eyebrow="Today's match" title="Team sheet." className="mb-7" />
-        <div className="grid grid-cols-2 gap-6 sm:gap-12">
-          <div>
-            <div className="flex items-center gap-2.5 mb-5">
-              <Crest className="h-8 w-8 sm:h-10 sm:w-10 text-navy shrink-0" />
-              <div>
-                <div className="font-serif text-base sm:text-lg text-navy leading-tight">Doncaster City FC</div>
-                <div className="text-[9px] uppercase tracking-[0.18em] text-mute">Home</div>
-              </div>
-            </div>
-            <table className="w-full">
-              <tbody>
-                {firstTeamPlayers
-                  .slice()
-                  .sort((a, b) => (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99))
-                  .map((p) => (
-                    <tr key={p.id} className="border-b border-line">
-                      <td className="py-1.5 sm:py-2 pr-3 tabular-nums text-mute text-xs sm:text-sm w-7 sm:w-8">{p.shirtNumber ?? "—"}</td>
-                      <td className="py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-navy">{p.name}</td>
-                      <td className="py-1.5 sm:py-2 text-right text-[9px] sm:text-[10px] uppercase tracking-wide text-mute hidden sm:table-cell">{p.position ?? ""}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+      <PageScroll className="bg-paper">
+
+        {/* Match header — full-width dark band */}
+        <div className="bg-navy px-5 py-5 text-center">
+          <div className="text-[8px] uppercase tracking-[0.35em] text-sky mb-2 font-semibold">Team Sheet</div>
+          <div className="font-serif text-paper leading-tight" style={{ fontSize: "clamp(1.1rem, 4vw, 1.6rem)" }}>
+            Doncaster City FC
+            <span className="text-paper/35 font-light mx-2 text-base">v</span>
+            {fixture?.opponent ?? "Opposition"}
           </div>
+          {matchDate && (
+            <div className="text-paper/40 text-[10px] mt-1.5 tracking-wide">{matchDate}</div>
+          )}
+        </div>
+
+        {/* Team columns */}
+        <div className="grid grid-cols-2 divide-x divide-line min-h-0">
+
+          {/* ── DCFC ── */}
           <div>
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="h-8 w-8 sm:h-10 sm:w-10 border border-line bg-paper flex items-center justify-center shrink-0">
-                <span className="text-[8px] uppercase tracking-wide text-mute/60">Crest</span>
-              </div>
+            {/* Column header */}
+            <div className="flex items-center gap-2.5 px-3 py-3 bg-navy/5 border-b border-line">
+              <Crest className="h-7 w-7 text-navy shrink-0" />
               <div>
-                <div className="font-serif text-base sm:text-lg text-navy leading-tight">{fixture?.opponent ?? "Opposition"}</div>
-                <div className="text-[9px] uppercase tracking-[0.18em] text-mute">Away</div>
+                <div className="font-semibold text-navy text-xs leading-tight">Doncaster City FC</div>
+                <div className="text-[8px] uppercase tracking-[0.18em] text-sky-deep mt-0.5">Home</div>
               </div>
             </div>
-            {oppositionLines.length > 0 ? (
-              <table className="w-full">
-                <tbody>
-                  {oppositionLines.map((line, i) => {
-                    const match = line.match(/^(\d+)\s+(.+)$/);
-                    return (
-                      <tr key={i} className="border-b border-line">
-                        <td className="py-1.5 sm:py-2 pr-3 tabular-nums text-mute text-xs sm:text-sm w-7 sm:w-8">{match ? match[1] : i + 1}</td>
-                        <td className="py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-navy">{match ? match[2] : line}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            ) : (
-              <div>
-                {Array.from({ length: 16 }, (_, i) => (
-                  <div key={i} className="flex items-center gap-3 border-b border-line py-1.5 sm:py-2">
-                    <span className="text-mute text-xs sm:text-sm tabular-nums w-7 sm:w-8 shrink-0">{i + 1}</span>
-                    <div className="flex-1 h-px bg-line/50" />
+            {/* Players */}
+            {firstTeamPlayers
+              .slice()
+              .sort((a, b) => (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99))
+              .map((p) => (
+                <div key={p.id} className="flex items-center border-b border-line/70 px-3 py-1.5 gap-2.5">
+                  <span
+                    className="text-navy/25 tabular-nums shrink-0 text-right leading-none select-none"
+                    style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", width: "1.5rem" }}
+                  >
+                    {p.shirtNumber ?? "—"}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-semibold text-navy leading-tight truncate">{p.name}</div>
+                    {p.position && (
+                      <div className="text-[8px] uppercase tracking-[0.14em] text-mute leading-none mt-0.5">{p.position}</div>
+                    )}
                   </div>
-                ))}
+                </div>
+              ))}
+          </div>
+
+          {/* ── Opposition ── */}
+          <div>
+            {/* Column header */}
+            <div className="flex items-center gap-2.5 px-3 py-3 bg-navy/5 border-b border-line">
+              <div className="h-7 w-7 border border-line/80 bg-paper-warm flex items-center justify-center shrink-0">
+                <span className="text-[6px] uppercase tracking-wide text-mute/50 text-center leading-tight">Away<br/>Crest</span>
               </div>
+              <div>
+                <div className="font-semibold text-navy text-xs leading-tight">{fixture?.opponent ?? "Opposition"}</div>
+                <div className="text-[8px] uppercase tracking-[0.18em] text-mute mt-0.5">Away</div>
+              </div>
+            </div>
+            {/* Players */}
+            {oppositionLines.length > 0 ? (
+              oppositionLines.map((line, i) => {
+                const m = line.match(/^(\d+)\s+(.+)$/);
+                return (
+                  <div key={i} className="flex items-center border-b border-line/70 px-3 py-1.5 gap-2.5">
+                    <span
+                      className="text-navy/25 tabular-nums shrink-0 text-right leading-none select-none"
+                      style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", width: "1.5rem" }}
+                    >
+                      {m ? m[1] : i + 1}
+                    </span>
+                    <div className="text-[11px] font-semibold text-navy leading-tight truncate">{m ? m[2] : line}</div>
+                  </div>
+                );
+              })
+            ) : (
+              Array.from({ length: 16 }, (_, i) => (
+                <div key={i} className="flex items-center border-b border-line/70 px-3 py-1.5 gap-2.5">
+                  <span
+                    className="text-navy/20 tabular-nums shrink-0 text-right leading-none select-none"
+                    style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", width: "1.5rem" }}
+                  >
+                    {i + 1}
+                  </span>
+                  <div className="flex-1 h-px bg-line/40" />
+                </div>
+              ))
             )}
           </div>
+
         </div>
+
+        {/* Bottom credit strip */}
+        <div className="bg-navy/5 border-t border-line px-5 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Crest className="h-4 w-4 text-navy/30" />
+            <span className="text-[8px] uppercase tracking-[0.2em] text-mute">Doncaster City FC</span>
+          </div>
+          <span className="text-[8px] text-mute/60">doncastercity-fc.com</span>
+        </div>
+
       </PageScroll>
     ),
   });
