@@ -86,7 +86,8 @@ function encode(pipeline: sharp.Sharp, format: VariantFormat): sharp.Sharp {
     case "webp":
       return pipeline.webp({ quality: 80 });
     case "jpeg":
-      return pipeline.jpeg({ quality: 80, mozjpeg: true });
+      // Flatten transparency to white before JPEG encoding (JPEG has no alpha channel).
+      return pipeline.flatten({ background: { r: 255, g: 255, b: 255 } }).jpeg({ quality: 80, mozjpeg: true });
     case "png":
       return pipeline.png({ compressionLevel: 9 });
   }

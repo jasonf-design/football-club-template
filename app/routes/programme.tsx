@@ -4,7 +4,7 @@ import { Form, Link, useActionData } from "react-router";
 import type { Route } from "./+types/programme";
 import { db } from "~/db.server";
 import { fixtures, media, players, programmeInterest, programmes, sponsors } from "../../db/schema";
-import { variantUrl } from "~/lib/uploads";
+import { variantUrl, fallbackFormatFor } from "~/lib/uploads";
 import { readLeagueTable } from "~/lib/fwp.server";
 import { sendProgrammeInterestNotification } from "~/lib/email.server";
 import { requireAdmin } from "~/lib/session.server";
@@ -151,7 +151,7 @@ type Sponsor = { id: string; name: string; url: string | null; logoFilename: str
 
 function SponsorLogo({ sponsor, className = "" }: { sponsor: Sponsor; className?: string }) {
   return sponsor.logoFilename
-    ? <img src={variantUrl(sponsor.logoFilename, 400, "jpeg")} alt={sponsor.name} className={`object-contain ${className}`} />
+    ? <img src={variantUrl(sponsor.logoFilename, 400, fallbackFormatFor(sponsor.logoFilename))} alt={sponsor.name} className={`object-contain ${className}`} />
     : <span className="font-semibold text-navy tracking-wide">{sponsor.name}</span>;
 }
 
@@ -694,87 +694,127 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
     pages.push({
       id: "table",
       el: (
-        <PageScroll className="bg-paper-warm px-6 py-10 sm:px-10 sm:py-12">
-          <SectionHeader eyebrow={leagueSnapshot.data.competition?.name ?? "League"} title="League table." className="mb-7" />
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
+        <PageFull className="bg-paper-warm flex flex-col">
+          <div className="shrink-0 px-5 pt-5 pb-3 border-b border-line">
+            <div className="text-[8px] uppercase tracking-[0.3em] text-sky-deep font-semibold mb-0.5">
+              {leagueSnapshot.data.competition?.name ?? "League"}
+            </div>
+            <div className="font-serif text-navy text-lg">League table.</div>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-navy text-paper text-[9px] uppercase tracking-[0.18em]">
-                  <th className="px-2 py-2.5 text-left w-8">Pos</th>
-                  <th className="px-2 py-2.5 text-left">Club</th>
-                  <th className="px-2 py-2.5 text-center w-8">P</th>
-                  <th className="px-2 py-2.5 text-center w-8 hidden sm:table-cell">W</th>
-                  <th className="px-2 py-2.5 text-center w-8 hidden sm:table-cell">D</th>
-                  <th className="px-2 py-2.5 text-center w-8 hidden sm:table-cell">L</th>
-                  <th className="px-2 py-2.5 text-center w-10 hidden sm:table-cell">GD</th>
-                  <th className="px-2 py-2.5 text-center w-10">Pts</th>
+                <tr className="bg-navy text-paper text-[8px] uppercase tracking-[0.15em]">
+                  <th className="px-2 py-1.5 text-left w-7 font-semibold">#</th>
+                  <th className="px-2 py-1.5 text-left font-semibold">Club</th>
+                  <th className="px-2 py-1.5 text-center w-7 font-semibold">P</th>
+                  <th className="px-2 py-1.5 text-center w-7 font-semibold">W</th>
+                  <th className="px-2 py-1.5 text-center w-7 font-semibold">D</th>
+                  <th className="px-2 py-1.5 text-center w-7 font-semibold">L</th>
+                  <th className="px-2 py-1.5 text-center w-8 font-semibold">GD</th>
+                  <th className="px-2 py-1.5 text-center w-8 font-semibold">Pts</th>
                 </tr>
               </thead>
               <tbody>
                 {leagueSnapshot.data.teams.map((team, i) => {
                   const isDcfc = team.name.toLowerCase().includes("doncaster city");
                   return (
-                    <tr key={team.id} className={["border-b border-line text-xs", isDcfc ? "bg-sky/10 font-semibold" : i % 2 === 0 ? "bg-paper" : "bg-paper-warm/25"].join(" ")}>
-                      <td className="px-2 py-2 text-mute tabular-nums">{team.position}</td>
-                      <td className="px-2 py-2">
+                    <tr key={team.id} className={["border-b border-line/50", isDcfc ? "bg-sky/10" : i % 2 === 0 ? "bg-paper/60" : ""].join(" ")}>
+                      <td className="px-2 py-1.5 text-[9px] text-mute tabular-nums">{team.position}</td>
+                      <td className="px-2 py-1.5 text-[10px]">
                         <span className={isDcfc ? "text-navy font-semibold" : "text-ink"}>{team.name}</span>
-                        {isDcfc && <span className="ml-1.5 text-[8px] uppercase tracking-wide text-sky-deep bg-sky/20 px-1 py-0.5">Us</span>}
+                        {isDcfc && <span className="ml-1 text-[7px] uppercase tracking-wide text-sky-deep bg-sky/20 px-1 py-0.5">Us</span>}
                       </td>
-                      <td className="px-2 py-2 text-center tabular-nums text-mute">{team["all-matches"].played}</td>
-                      <td className="px-2 py-2 text-center tabular-nums text-mute hidden sm:table-cell">{team["all-matches"].won}</td>
-                      <td className="px-2 py-2 text-center tabular-nums text-mute hidden sm:table-cell">{team["all-matches"].drawn}</td>
-                      <td className="px-2 py-2 text-center tabular-nums text-mute hidden sm:table-cell">{team["all-matches"].lost}</td>
-                      <td className="px-2 py-2 text-center tabular-nums text-mute hidden sm:table-cell">
+                      <td className="px-2 py-1.5 text-center text-[9px] tabular-nums text-mute">{team["all-matches"].played}</td>
+                      <td className="px-2 py-1.5 text-center text-[9px] tabular-nums text-mute">{team["all-matches"].won}</td>
+                      <td className="px-2 py-1.5 text-center text-[9px] tabular-nums text-mute">{team["all-matches"].drawn}</td>
+                      <td className="px-2 py-1.5 text-center text-[9px] tabular-nums text-mute">{team["all-matches"].lost}</td>
+                      <td className="px-2 py-1.5 text-center text-[9px] tabular-nums text-mute">
                         {team["all-matches"]["goal-difference"] > 0 ? "+" : ""}{team["all-matches"]["goal-difference"]}
                       </td>
-                      <td className="px-2 py-2 text-center tabular-nums font-semibold text-navy">{team["total-points"]}</td>
+                      <td className="px-2 py-1.5 text-center text-[9px] tabular-nums font-bold text-navy">{team["total-points"]}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-        </PageScroll>
+          <div className="shrink-0 bg-navy/4 border-t border-line px-4 py-2 flex items-center justify-between">
+            <Crest className="h-3.5 w-3.5 text-navy/20" />
+            <span className="text-[7px] uppercase tracking-[0.2em] text-mute/60">doncastercity-fc.com</span>
+          </div>
+        </PageFull>
       ),
     });
   }
 
   // ── 6. Gold / official sponsors (2 per page) ──────────────────────────────────
+  const SPONSOR_DESCRIPTIONS: Record<string, string> = {
+    "Smokeys": "An award-winning grill serving quality food made with care. A third-generation family business with a five-star food hygiene rating and a 2025 Good Food Award — they believe fast food can be done properly, with great ingredients, every time.",
+    "Visit Bawtry": "A community platform celebrating the independent businesses and attractions of one of South Yorkshire's most charming market towns. From great restaurants and independent shops to events and entertainment, Visit Bawtry connects locals and visitors with the very best the town has to offer.",
+  };
+
   for (let gi = 0; gi < goldSponsors.length; gi += 2) {
     const pair = goldSponsors.slice(gi, gi + 2);
     pages.push({
       id: `gold-${gi}`,
       el: (
-        <PageFull className="bg-paper px-6 py-8 sm:px-10 sm:py-10">
-          {gi === 0 && (
-            <SectionHeader eyebrow="Official partners" title="Our sponsors." className="mb-6 sm:mb-7 shrink-0" />
-          )}
-          {gi > 0 && (
-            <div className="flex items-center gap-3 mb-6 shrink-0">
-              <span className="text-[9px] uppercase tracking-[0.3em] text-sky-deep font-semibold shrink-0">Official partners</span>
-              <div className="flex-1 h-px bg-line" />
+        <PageFull className="bg-paper flex flex-col">
+          {/* Page header */}
+          <div className="shrink-0 px-5 pt-5 pb-3 border-b border-line flex items-end justify-between">
+            <div>
+              <div className="text-[8px] uppercase tracking-[0.3em] text-sky-deep font-semibold mb-0.5">Official Partners</div>
+              <div className="font-serif text-navy text-lg leading-tight">Our sponsors.</div>
             </div>
-          )}
-          <div className={`flex-1 grid min-h-0 gap-4 sm:gap-6 ${pair.length === 1 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"}`}>
-            {pair.map((s) => (
-              <div key={s.id} className="border border-line flex flex-col items-center justify-center text-center gap-4 sm:gap-5 p-7 sm:p-10 min-h-0">
-                {s.logoFilename ? (
-                  <div className="h-20 sm:h-24 flex items-center justify-center">
-                    <img src={variantUrl(s.logoFilename, 400, "jpeg")} alt={s.name} className="max-h-full max-w-[180px] sm:max-w-[220px] object-contain" />
+            {gi > 0 && <div className="text-[8px] uppercase tracking-[0.2em] text-mute">Continued</div>}
+          </div>
+
+          {/* Sponsor cards */}
+          <div className="flex-1 flex flex-col divide-y divide-line min-h-0 overflow-hidden">
+            {pair.map((s) => {
+              const desc = SPONSOR_DESCRIPTIONS[s.name] ?? null;
+              const logoFmt = s.logoFilename ? fallbackFormatFor(s.logoFilename) : "jpeg";
+              return (
+                <div key={s.id} className="flex-1 flex flex-col justify-center px-6 py-5 gap-3 min-h-0">
+                  {/* Logo + name row */}
+                  <div className="flex items-center gap-4">
+                    {s.logoFilename && (
+                      <div className="shrink-0 h-10 w-28 flex items-center">
+                        <img
+                          src={variantUrl(s.logoFilename, 240, logoFmt)}
+                          alt={s.name}
+                          className="max-h-full max-w-full object-contain object-left"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-serif text-lg text-navy leading-tight">{s.name}</div>
+                      <div className="text-[8px] uppercase tracking-[0.2em] text-mute mt-0.5">Official Partner · Doncaster City FC</div>
+                    </div>
                   </div>
-                ) : null}
-                <div>
-                  <div className="font-serif text-xl sm:text-2xl text-navy mb-1">{s.name}</div>
-                  <div className="text-[9px] uppercase tracking-[0.2em] text-mute">Official Partner · Doncaster City FC</div>
+                  {/* Description */}
+                  {desc && (
+                    <p className="text-xs text-ink/70 leading-relaxed">{desc}</p>
+                  )}
+                  {/* Link */}
+                  {s.url && (
+                    <a
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-sky-deep underline underline-offset-2 hover:text-navy transition-colors"
+                    >
+                      {s.url.replace(/^https?:\/\/(www\.)?/, "")} ↗
+                    </a>
+                  )}
                 </div>
-                {s.url && (
-                  <a href={s.url} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-sky-deep underline underline-offset-4 hover:text-navy transition-colors">
-                    {s.url.replace(/^https?:\/\/(www\.)?/, "")}
-                  </a>
-                )}
-              </div>
-            ))}
+              );
+            })}
+          </div>
+
+          <div className="shrink-0 bg-navy/4 border-t border-line px-4 py-2 flex items-center justify-between">
+            <Crest className="h-3.5 w-3.5 text-navy/20" />
+            <span className="text-[7px] uppercase tracking-[0.2em] text-mute/60">doncastercity-fc.com</span>
           </div>
         </PageFull>
       ),
@@ -851,7 +891,7 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
     pages.push({
       id: "opposition",
       el: (
-        <PageScroll className="bg-paper-warm/40 px-6 py-10 sm:px-12 sm:py-14">
+        <PageScroll className="bg-paper-warm px-6 py-10 sm:px-12 sm:py-14">
           <div className="max-w-2xl mx-auto">
             <SectionHeader
               eyebrow="Today's opponents"
@@ -1084,10 +1124,10 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
   pages.push({
     id: "teamsheet",
     el: (
-      <PageScroll className="bg-paper">
+      <PageFull className="bg-paper flex flex-col">
 
         {/* Match header — full-width dark band */}
-        <div className="bg-navy px-5 py-5 text-center">
+        <div className="shrink-0 bg-navy px-5 py-4 text-center">
           <div className="text-[8px] uppercase tracking-[0.35em] text-sky mb-2 font-semibold">Team Sheet</div>
           <div className="font-serif text-paper leading-tight" style={{ fontSize: "clamp(1.1rem, 4vw, 1.6rem)" }}>
             Doncaster City FC
@@ -1099,8 +1139,8 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
           )}
         </div>
 
-        {/* Team columns */}
-        <div className="grid grid-cols-2 divide-x divide-line min-h-0">
+        {/* Team columns — flex-1 so they fill remaining page height */}
+        <div className="flex-1 grid grid-cols-2 divide-x divide-line min-h-0 overflow-hidden">
 
           {/* ── DCFC ── */}
           <div>
@@ -1117,7 +1157,7 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
               .slice()
               .sort((a, b) => (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99))
               .map((p) => (
-                <div key={p.id} className="flex items-center border-b border-line/70 px-3 py-1.5 gap-2.5">
+                <div key={p.id} className="flex items-center border-b border-line/70 px-3 py-1 gap-2.5">
                   <span
                     className="text-navy/25 tabular-nums shrink-0 text-right leading-none select-none"
                     style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", width: "1.5rem" }}
@@ -1180,15 +1220,15 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
         </div>
 
         {/* Bottom credit strip */}
-        <div className="bg-navy/5 border-t border-line px-5 py-3 flex items-center justify-between">
+        <div className="shrink-0 bg-navy/5 border-t border-line px-5 py-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Crest className="h-4 w-4 text-navy/30" />
+            <Crest className="h-3.5 w-3.5 text-navy/30" />
             <span className="text-[8px] uppercase tracking-[0.2em] text-mute">Doncaster City FC</span>
           </div>
           <span className="text-[8px] text-mute/60">doncastercity-fc.com</span>
         </div>
 
-      </PageScroll>
+      </PageFull>
     ),
   });
 
