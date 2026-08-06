@@ -2,6 +2,7 @@ import { Link } from "react-router";
 
 export function ResultCard({
   id,
+  slug,
   opponent,
   homeAway,
   homeScore,
@@ -10,6 +11,7 @@ export function ResultCard({
   date,
 }: {
   id?: string;
+  slug?: string | null;
   opponent: string;
   homeAway: "home" | "away";
   homeScore: number | null;
@@ -76,7 +78,7 @@ export function ResultCard({
   if (id) {
     return (
       <Link
-        to={`/fixtures/${id}`}
+        to={`/fixtures/${slug ?? id}`}
         className={`${baseCls} hover:bg-paper-warm/60 transition-colors`}
       >
         {inner}

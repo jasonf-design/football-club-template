@@ -116,6 +116,7 @@ export default function Fixtures({ loaderData }: Route.ComponentProps) {
                 <ResultCard
                   key={r.id}
                   id={r.id}
+                  slug={r.slug}
                   opponent={r.opponent}
                   homeAway={r.homeAway}
                   homeScore={r.homeScore}
