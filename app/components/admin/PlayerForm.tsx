@@ -1,6 +1,6 @@
 import { Form, Link, useNavigation } from "react-router";
 import { Field, FormRow, Select, TextArea, TextInput } from "./Field";
-import { ImagePicker } from "./ImagePicker";
+import { MediaPickerField } from "./MediaPickerField";
 import { PrimaryButton } from "./AdminShell";
 
 export type PlayerFormData = {
@@ -15,10 +15,12 @@ export type PlayerFormData = {
   active?: boolean;
   sponsor1Name?: string | null;
   sponsor1Url?: string | null;
+  sponsor1Description?: string | null;
   sponsor1LogoMediaId?: string | null;
   sponsor1LogoUrl?: string | null;
   sponsor2Name?: string | null;
   sponsor2Url?: string | null;
+  sponsor2Description?: string | null;
   sponsor2LogoMediaId?: string | null;
   sponsor2LogoUrl?: string | null;
   sponsorshipUrl?: string | null;
@@ -129,25 +131,23 @@ export function PlayerForm({
           </div>
           <SponsorSlot
             slot={1}
-            initial={{ name: initial.sponsor1Name, url: initial.sponsor1Url, logoMediaId: initial.sponsor1LogoMediaId, logoUrl: initial.sponsor1LogoUrl }}
+            initial={{ name: initial.sponsor1Name, url: initial.sponsor1Url, description: initial.sponsor1Description, logoMediaId: initial.sponsor1LogoMediaId, logoUrl: initial.sponsor1LogoUrl }}
             errors={errors}
           />
           <div className="border-t border-line" />
           <SponsorSlot
             slot={2}
-            initial={{ name: initial.sponsor2Name, url: initial.sponsor2Url, logoMediaId: initial.sponsor2LogoMediaId, logoUrl: initial.sponsor2LogoUrl }}
+            initial={{ name: initial.sponsor2Name, url: initial.sponsor2Url, description: initial.sponsor2Description, logoMediaId: initial.sponsor2LogoMediaId, logoUrl: initial.sponsor2LogoUrl }}
             errors={errors}
           />
         </div>
       </div>
 
       <div className="bg-paper border border-line p-5">
-        <ImagePicker
+        <MediaPickerField
           name="photoMediaId"
           label="Player photo"
-          initialUrl={initial.photoUrl}
-          initialMediaId={initial.photoMediaId}
-          aspect="aspect-[3/4]"
+          value={initial.photoMediaId ?? ""}
         />
       </div>
     </Form>
@@ -160,7 +160,7 @@ function SponsorSlot({
   errors,
 }: {
   slot: 1 | 2;
-  initial: { name?: string | null; url?: string | null; logoMediaId?: string | null; logoUrl?: string | null };
+  initial: { name?: string | null; url?: string | null; description?: string | null; logoMediaId?: string | null; logoUrl?: string | null };
   errors: Record<string, string>;
 }) {
   const prefix = `sponsor${slot}`;
@@ -175,12 +175,13 @@ function SponsorSlot({
           <TextInput name={`${prefix}Url`} defaultValue={initial.url ?? ""} placeholder="https://…" />
         </Field>
       </FormRow>
-      <ImagePicker
+      <Field name={`${prefix}Description`} label="What they do" hint="Short line shown on the player spotlight page">
+        <TextInput name={`${prefix}Description`} defaultValue={initial.description ?? ""} placeholder="Local builders &amp; property developers" />
+      </Field>
+      <MediaPickerField
         name={`${prefix}LogoMediaId`}
         label="Logo"
-        initialUrl={initial.logoUrl}
-        initialMediaId={initial.logoMediaId}
-        aspect="aspect-[3/1]"
+        value={initial.logoMediaId ?? ""}
       />
     </div>
   );

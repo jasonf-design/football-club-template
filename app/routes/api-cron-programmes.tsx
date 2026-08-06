@@ -69,7 +69,7 @@ export async function action({ request }: Route.ActionArgs) {
         kickoff: fixture.kickoff,
         programmeId: newProg.id,
       });
-      existingByFixtureId.set(fixture.id, { ...newProg, fixtureId: fixture.id, status: "draft", coverImageMediaId: null, managersNotes: null, oppositionProfile: null, oppositionLineup: null, featuredPlayerId: null, featuredSponsorId: null, coverSponsorId: null, leagueNotifiedAt: null, createdAt: now, updatedAt: now });
+      existingByFixtureId.set(fixture.id, { ...newProg, fixtureId: fixture.id, status: "draft", coverImageMediaId: null, managersNotes: null, oppositionProfile: null, oppositionLineup: null, oppositionSquad: null, chairmansNotes: null, blakesThoughts: null, featuredPlayerId: null, featuredSponsorId: null, coverSponsorId: null, leagueNotifiedAt: null, createdAt: now, updatedAt: now });
     }
   }
 

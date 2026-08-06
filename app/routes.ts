@@ -83,6 +83,11 @@ export default [
       route("users/new", "routes/admin-users-new.tsx"),
       route("users/:id/edit", "routes/admin-users-edit.tsx"),
       route("api/upload", "routes/admin-upload.tsx"),
+      route("api/focal", "routes/admin-api-focal.tsx"),
+      route("api/media", "routes/admin-api-media.tsx"),
+      route("api/player-spotlight", "routes/admin-api-player-spotlight.tsx"),
+      route("api/wikipedia", "routes/admin-api-wikipedia.tsx"),
+      route("api/opposition-upload", "routes/admin-api-opposition-upload.tsx"),
     ]),
   ]),
 ] satisfies RouteConfig;

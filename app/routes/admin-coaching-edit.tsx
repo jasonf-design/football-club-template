@@ -27,6 +27,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     : null;
 
   return { member, photoUrl: uploadUrlFor(photoFilename) };
+
 }
 
 const schema = z.object({
@@ -34,6 +35,9 @@ const schema = z.object({
   name: z.string().min(2).max(120),
   role: z.string().min(1).max(100),
   photoMediaId: z.string().max(64).optional(),
+  sponsor1Name: z.string().max(120).optional(),
+  sponsor1Url: z.string().max(300).optional(),
+  sponsor1LogoMediaId: z.string().max(64).optional(),
   sortOrder: z.string().optional(),
   active: z.string().optional(),
 });
@@ -50,6 +54,9 @@ export async function action({ request, params }: Route.ActionArgs) {
     name: form.get("name"),
     role: form.get("role"),
     photoMediaId: form.get("photoMediaId") || undefined,
+    sponsor1Name: form.get("sponsor1Name") || undefined,
+    sponsor1Url: form.get("sponsor1Url") || undefined,
+    sponsor1LogoMediaId: form.get("sponsor1LogoMediaId") || undefined,
     sortOrder: form.get("sortOrder") || undefined,
     active: form.get("active") || undefined,
   });
@@ -68,6 +75,9 @@ export async function action({ request, params }: Route.ActionArgs) {
       name: parsed.data.name,
       role: parsed.data.role,
       photoMediaId: parsed.data.photoMediaId || null,
+      sponsor1Name: parsed.data.sponsor1Name || null,
+      sponsor1Url: parsed.data.sponsor1Url || null,
+      sponsor1LogoMediaId: parsed.data.sponsor1LogoMediaId || null,
       sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
       active: parsed.data.active === "on",
     })
@@ -95,6 +105,9 @@ export default function AdminCoachingEdit() {
           role: member.role,
           photoMediaId: member.photoMediaId,
           photoUrl,
+          sponsor1Name: member.sponsor1Name,
+          sponsor1Url: member.sponsor1Url,
+          sponsor1LogoMediaId: member.sponsor1LogoMediaId,
           sortOrder: member.sortOrder,
           active: member.active,
         }}

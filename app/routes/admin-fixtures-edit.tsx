@@ -5,6 +5,7 @@ import type { Route } from "./+types/admin-fixtures-edit";
 import { db } from "~/db.server";
 import { fixtures } from "../../db/schema";
 import { requireAdmin } from "~/lib/session.server";
+import { makeFixtureSlug } from "~/lib/fixture-slug";
 import { AdminBreadcrumbs, AdminPage } from "~/components/admin/AdminShell";
 import { FixtureForm } from "~/components/admin/FixtureForm";
 
@@ -68,18 +69,20 @@ export async function action({ request, params }: Route.ActionArgs) {
   }
   const homeScore = parsed.data.homeScore ? Number(parsed.data.homeScore) : null;
   const awayScore = parsed.data.awayScore ? Number(parsed.data.awayScore) : null;
+  const kickoffDate = new Date(parsed.data.kickoff);
   await db
     .update(fixtures)
     .set({
       competition: parsed.data.competition,
       opponent: parsed.data.opponent,
       homeAway: parsed.data.homeAway,
-      kickoff: new Date(parsed.data.kickoff),
+      kickoff: kickoffDate,
       venue: parsed.data.venue ?? null,
       status: parsed.data.status,
       homeScore: Number.isFinite(homeScore) ? homeScore : null,
       awayScore: Number.isFinite(awayScore) ? awayScore : null,
       notes: parsed.data.notes ?? null,
+      slug: makeFixtureSlug(parsed.data.opponent, kickoffDate),
     })
     .where(eq(fixtures.id, params.id));
   throw redirect("/admin/fixtures");

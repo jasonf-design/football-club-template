@@ -4,7 +4,15 @@ export type StaffMember = {
   name: string;
   role: string;
   photoFilename: string | null;
+  sponsor1Name?: string | null;
+  sponsor1Url?: string | null;
+  sponsor1LogoFilename?: string | null;
 };
+
+function ensureAbsolute(url: string | null): string | null {
+  if (!url) return null;
+  return url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
+}
 
 function initials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
@@ -37,11 +45,40 @@ export function CoachingSection({ staff }: { staff: StaffMember[] }) {
                 </div>
               )}
             </div>
-            <div>
+            <div className="w-full">
               <div className="font-serif text-base text-navy leading-tight">{s.name}</div>
               <div className="text-[9px] uppercase tracking-[0.18em] text-mute mt-1 leading-tight">
                 {s.role}
               </div>
+              {s.sponsor1Name && (() => {
+                const url = ensureAbsolute(s.sponsor1Url ?? null);
+                const inner = (
+                  <div className="flex items-center gap-2 border border-line bg-paper-warm/30 px-2 py-1 min-w-0 mt-2">
+                    {s.sponsor1LogoFilename && (
+                      <img
+                        src={variantUrl(s.sponsor1LogoFilename, 120, "jpeg")}
+                        alt={s.sponsor1Name}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-4 w-auto max-w-[40px] object-contain flex-shrink-0"
+                      />
+                    )}
+                    <span className="text-[9px] uppercase tracking-[0.14em] text-navy/70 font-semibold truncate">
+                      {s.sponsor1Name}
+                    </span>
+                  </div>
+                );
+                return (
+                  <div>
+                    <div className="text-[9px] uppercase tracking-[0.14em] text-mute mt-2 mb-0.5">Sponsored by</div>
+                    {url ? (
+                      <a href={url} target="_blank" rel="noreferrer" className="block hover:opacity-80 transition-opacity">
+                        {inner}
+                      </a>
+                    ) : inner}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         ))}

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { data, Link } from "react-router";
 import type { Route } from "./+types/fixture-detail";
 import { db } from "~/db.server";
@@ -32,7 +32,7 @@ export async function loader({ params }: Route.LoaderArgs) {
   const [fixture] = await db
     .select()
     .from(fixtures)
-    .where(eq(fixtures.id, params.id))
+    .where(or(eq(fixtures.slug, params.id), eq(fixtures.id, params.id)))
     .limit(1);
   if (!fixture) throw data("Not Found", { status: 404 });
 

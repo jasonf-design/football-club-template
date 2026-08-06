@@ -10,6 +10,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "~/db.server";
 import { fixtures, fwpSnapshots, type Fixture } from "../../db/schema";
+import { makeFixtureSlug } from "./fixture-slug";
 
 const BASE = "https://api.footballwebpages.co.uk/v2";
 
@@ -101,11 +102,17 @@ function mapStatus(m: FwpMatch): Fixture["status"] {
   return "scheduled";
 }
 
-// Combines "YYYY-MM-DD" + "HH:MM" into a Date interpreted as the server's
-// local time (production runs Europe/London, matching the FWP feed).
+// FWP gives times in Europe/London local time. Parse correctly regardless of
+// server timezone by computing the London UTC offset for the given date.
 function parseKickoff(m: FwpMatch): Date {
   const time = /^\d{2}:\d{2}$/.test(m.time) ? m.time : "15:00";
-  return new Date(`${m.date}T${time}:00`);
+  const asUtc = new Date(`${m.date}T${time}:00Z`);
+  // Find how far London local is ahead of UTC at this date (e.g. +3600000 in BST)
+  const londonAsIfUtc = new Date(
+    asUtc.toLocaleString("en-US", { timeZone: "Europe/London" }) + " UTC"
+  );
+  const offsetMs = londonAsIfUtc.getTime() - asUtc.getTime();
+  return new Date(asUtc.getTime() - offsetMs);
 }
 
 type Mapped = {
@@ -185,7 +192,7 @@ export async function syncDcfcFixtures(): Promise<SyncResult> {
       .limit(1);
 
     if (!existing) {
-      await db.insert(fixtures).values({ ...m, source: "fwp", notes: null });
+      await db.insert(fixtures).values({ ...m, source: "fwp", notes: null, slug: makeFixtureSlug(m.opponent, m.kickoff) });
       result.created++;
       continue;
     }
@@ -216,6 +223,7 @@ export async function syncDcfcFixtures(): Promise<SyncResult> {
         status: m.status,
         homeScore: m.homeScore,
         awayScore: m.awayScore,
+        slug: makeFixtureSlug(m.opponent, m.kickoff),
       })
       .where(eq(fixtures.id, existing.id));
     result.updated++;
@@ -226,6 +234,16 @@ export async function syncDcfcFixtures(): Promise<SyncResult> {
 
 // --- snapshots (key/value JSON cache for static-during-offseason data) ---
 
+type MatchStats = {
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  for: number;
+  against: number;
+  "goal-difference": number;
+};
+
 export type LeagueTableTeam = {
   id: number;
   name: string;
@@ -233,15 +251,9 @@ export type LeagueTableTeam = {
   "total-points": number;
   outcome?: string;
   zone?: string;
-  "all-matches": {
-    played: number;
-    won: number;
-    drawn: number;
-    lost: number;
-    for: number;
-    against: number;
-    "goal-difference": number;
-  };
+  "all-matches": MatchStats;
+  "home-matches": MatchStats;
+  "away-matches": MatchStats;
 };
 
 export type LeagueTable = {
@@ -250,7 +262,7 @@ export type LeagueTable = {
   teams: LeagueTableTeam[];
 };
 
-type SnapshotKey = "league-table" | `match:${string}`;
+type SnapshotKey = "league-table" | "top-scorers" | `match:${string}`;
 
 async function upsertSnapshot(key: SnapshotKey, data: unknown): Promise<void> {
   const now = new Date();
@@ -294,6 +306,50 @@ async function readSnapshot<T>(key: SnapshotKey): Promise<SnapshotRecord<T>> {
 
 export function readLeagueTable() {
   return readSnapshot<LeagueTable>("league-table");
+}
+
+// --- top scorers ---
+
+export type TopScorer = {
+  rank: number;
+  goals: number;
+  penalties?: number;
+  player: {
+    id?: number;
+    "first-name": string;
+    "last-name": string;
+  };
+  team: {
+    id: number;
+    name: string;
+  };
+};
+
+export type TopScorers = {
+  competition: { id: number; name: string };
+  scorers: TopScorer[];
+};
+
+export async function syncTopScorers(): Promise<{ count: number; competition: string; fetchedAt: Date }> {
+  const tableSnapshot = await readSnapshot<LeagueTable>("league-table");
+  if (!tableSnapshot) {
+    throw new FwpError("Sync the league table first — the competition ID is needed to fetch top scorers.");
+  }
+
+  const { id: competitionId, name: competitionName } = tableSnapshot.data.competition;
+
+  const data = await fwpFetch<{ "top-scorers": { scorers?: TopScorer[] } }>(
+    "top-scorers.json",
+    { competition: competitionId },
+  );
+
+  const scorers = data["top-scorers"]?.scorers ?? [];
+  await upsertSnapshot("top-scorers", { competition: { id: competitionId, name: competitionName }, scorers });
+  return { count: scorers.length, competition: competitionName, fetchedAt: new Date() };
+}
+
+export function readTopScorers() {
+  return readSnapshot<TopScorers>("top-scorers");
 }
 
 // --- match detail ---

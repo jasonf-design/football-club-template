@@ -74,8 +74,20 @@ export default function Fixtures({ loaderData }: Route.ComponentProps) {
         title="Fixtures & results."
         lede="Every match, every score, every step of the journey. Add it to your diary and we'll see you there."
       />
+      {leagueTable && (
+        <div className="border-b border-line bg-paper-warm">
+          <Container size="wide" className="py-3">
+            <a
+              href="#table"
+              className="inline-flex items-center gap-3 text-lg font-bold text-navy hover:text-sky-deep transition-colors"
+            >
+              <span>↓ Click here for the League Table</span>
+            </a>
+          </Container>
+        </div>
+      )}
       <Container size="wide" className="py-16 grid grid-cols-1 lg:grid-cols-2 gap-16">
-        <section>
+        <section id="upcoming">
           <SectionHeading label="Upcoming" />
           {upcoming.length === 0 ? (
             <EmptyState
@@ -90,7 +102,7 @@ export default function Fixtures({ loaderData }: Route.ComponentProps) {
             </ul>
           )}
         </section>
-        <section>
+        <section id="results">
           <SectionHeading label="Recent results" />
           {formStrip.length > 0 && <FormStrip results={formStrip} />}
           {recent.length === 0 ? (
@@ -117,10 +129,12 @@ export default function Fixtures({ loaderData }: Route.ComponentProps) {
         </section>
       </Container>
       {leagueTable && (
-        <Container size="wide" className="pb-20">
-          <SectionHeading label={leagueTable.competition.name} />
-          <LeagueTableView table={leagueTable} ourTeamId={ourTeamId} />
-        </Container>
+        <section id="table">
+          <Container size="wide" className="pb-20">
+            <SectionHeading label={leagueTable.competition.name} />
+            <LeagueTableView table={leagueTable} ourTeamId={ourTeamId} />
+          </Container>
+        </section>
       )}
     </>
   );
@@ -152,6 +166,16 @@ function FormStrip({ results }: { results: Array<"W" | "D" | "L"> }) {
   );
 }
 
+function teamLogoSrc(name: string) {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
+  return `/League%20Table%20Logos/${slug}-logo.jpg`;
+}
+
 function LeagueTableView({
   table,
   ourTeamId,
@@ -160,141 +184,87 @@ function LeagueTableView({
   ourTeamId: number;
 }) {
   return (
-    <>
-      {/* Mobile: stacked card per team */}
-      <ul className="sm:hidden border border-line bg-paper">
-        {table.teams.map((t) => {
-          const us = t.id === ourTeamId;
-          const s = t["all-matches"];
-          const status = t.outcome ?? t.zone;
-          const gd = s["goal-difference"];
-          return (
-            <li
-              key={t.id}
-              className={[
-                "border-t border-line first:border-t-0 px-3 py-3",
-                us ? "bg-sky/10" : "",
-              ].join(" ")}
-            >
-              <div className="flex items-baseline gap-3">
-                <span className="scoreboard text-mute w-6 shrink-0">
-                  {t.position}
-                </span>
-                <div
-                  className={[
-                    "min-w-0 flex-1 truncate",
-                    us ? "font-semibold text-navy" : "text-ink",
-                  ].join(" ")}
-                >
-                  {t.name}
-                </div>
-              </div>
-              <div className="mt-1.5 ml-9 flex items-baseline justify-between gap-3">
-                <span
-                  className={[
-                    "text-[10px] uppercase tracking-[0.18em] truncate",
-                    !status && "invisible",
-                    t.outcome ? "text-sky-deep" : "text-mute",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  {status ?? "—"}
-                </span>
-                <div className="flex items-baseline gap-3 text-xs tabular-nums text-mute shrink-0">
-                  <span>P{s.played}</span>
-                  <span>W{s.won}</span>
-                  <span>D{s.drawn}</span>
-                  <span>L{s.lost}</span>
-                  <span>{gd > 0 ? `+${gd}` : gd}</span>
-                  <span className="scoreboard text-base text-navy ml-1">
-                    {t["total-points"]}
-                  </span>
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-
-      {/* Desktop: full 8-col table */}
-      <div className="hidden sm:block border border-line bg-paper">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-[10px] uppercase tracking-[0.18em] text-mute">
-              {[
-                { label: "#", cls: "px-3 py-3 text-left w-10" },
-                { label: "Team", cls: "px-3 py-3 text-left" },
-                { label: "P", cls: "px-2 py-3 text-right w-10" },
-                { label: "W", cls: "px-2 py-3 text-right w-10" },
-                { label: "D", cls: "px-2 py-3 text-right w-10" },
-                { label: "L", cls: "px-2 py-3 text-right w-10" },
-                { label: "GD", cls: "px-2 py-3 text-right w-12" },
-                { label: "Pts", cls: "px-3 py-3 text-right w-12" },
-              ].map((h) => (
-                <th
-                  key={h.label}
-                  className={`sticky top-0 z-10 bg-paper-warm shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)] ${h.cls}`}
-                >
-                  {h.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {table.teams.map((t) => {
-              const us = t.id === ourTeamId;
-              const s = t["all-matches"];
-              const status = t.outcome ?? t.zone;
-              return (
-                <tr
-                  key={t.id}
-                  className={[
-                    "border-t border-line",
-                    us ? "bg-sky/10 font-semibold text-navy" : "text-ink",
-                  ].join(" ")}
-                >
-                  <td className="px-3 py-2.5 text-mute scoreboard">
-                    {t.position}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    {t.name}
-                    {status && (
-                      <span
-                        className={[
-                          "ml-2 text-[10px] uppercase tracking-[0.18em]",
-                          t.outcome ? "text-sky-deep" : "text-mute",
-                        ].join(" ")}
-                      >
-                        {status}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-2 py-2.5 text-right tabular-nums">
-                    {s.played}
-                  </td>
-                  <td className="px-2 py-2.5 text-right tabular-nums">{s.won}</td>
-                  <td className="px-2 py-2.5 text-right tabular-nums">
-                    {s.drawn}
-                  </td>
-                  <td className="px-2 py-2.5 text-right tabular-nums">
-                    {s.lost}
-                  </td>
-                  <td className="px-2 py-2.5 text-right tabular-nums">
-                    {s["goal-difference"] > 0
-                      ? `+${s["goal-difference"]}`
-                      : s["goal-difference"]}
-                  </td>
-                  <td className="px-3 py-2.5 text-right scoreboard text-navy">
-                    {t["total-points"]}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </>
+    <div className="overflow-x-auto border border-line bg-paper">
+      <table className="w-full text-sm min-w-[700px]">
+        <thead>
+          <tr className="text-[10px] uppercase tracking-[0.18em] text-mute border-b border-line">
+            <th className="px-3 py-2 text-left w-8 bg-paper-warm" rowSpan={2}>#</th>
+            <th className="px-2 py-2 text-left w-6 bg-paper-warm" rowSpan={2} />
+            <th className="px-3 py-2 text-left bg-paper-warm" rowSpan={2}>Team</th>
+            <th className="px-2 py-1.5 text-center border-l border-line bg-paper-warm" colSpan={4}>Home</th>
+            <th className="px-2 py-1.5 text-center border-l border-line bg-paper-warm" colSpan={4}>Away</th>
+            <th className="px-2 py-1.5 text-center border-l border-line bg-paper-warm" colSpan={4}>Total</th>
+            <th className="px-2 py-1.5 text-center border-l border-line w-10 bg-paper-warm" rowSpan={2}>GD</th>
+            <th className="px-3 py-1.5 text-center border-l border-line w-10 bg-paper-warm" rowSpan={2}>Pts</th>
+          </tr>
+          <tr className="text-[10px] uppercase tracking-[0.18em] text-mute border-b border-line">
+            {["P","W","D","L","P","W","D","L","P","W","D","L"].map((label, i) => (
+              <th
+                key={i}
+                className={[
+                  "px-2 py-1.5 text-center w-8 bg-paper-warm",
+                  i % 4 === 0 ? "border-l border-line" : "",
+                ].join(" ")}
+              >
+                {label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.teams.map((t) => {
+            const us = t.id === ourTeamId;
+            const h = t["home-matches"];
+            const a = t["away-matches"];
+            const all = t["all-matches"];
+            const gd = all["goal-difference"];
+            return (
+              <tr
+                key={t.id}
+                className={[
+                  "border-t border-line",
+                  us ? "bg-sky/10 font-semibold text-navy" : "text-ink",
+                ].join(" ")}
+              >
+                <td className="px-3 py-2 text-mute scoreboard">{t.position}</td>
+                <td className="px-2 py-1.5">
+                  <img
+                    src={teamLogoSrc(t.name)}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-5 w-5 object-contain"
+                    onError={(e) => { (e.target as HTMLImageElement).style.visibility = "hidden"; }}
+                  />
+                </td>
+                <td className="px-3 py-2 whitespace-nowrap">{t.name}</td>
+                {/* Home */}
+                <td className="px-2 py-2 text-center tabular-nums border-l border-line text-mute">{h?.played ?? "–"}</td>
+                <td className="px-2 py-2 text-center tabular-nums text-mute">{h?.won ?? "–"}</td>
+                <td className="px-2 py-2 text-center tabular-nums text-mute">{h?.drawn ?? "–"}</td>
+                <td className="px-2 py-2 text-center tabular-nums text-mute">{h?.lost ?? "–"}</td>
+                {/* Away */}
+                <td className="px-2 py-2 text-center tabular-nums border-l border-line text-mute">{a?.played ?? "–"}</td>
+                <td className="px-2 py-2 text-center tabular-nums text-mute">{a?.won ?? "–"}</td>
+                <td className="px-2 py-2 text-center tabular-nums text-mute">{a?.drawn ?? "–"}</td>
+                <td className="px-2 py-2 text-center tabular-nums text-mute">{a?.lost ?? "–"}</td>
+                {/* Total */}
+                <td className="px-2 py-2 text-center tabular-nums border-l border-line text-mute">{all.played}</td>
+                <td className="px-2 py-2 text-center tabular-nums text-mute">{all.won}</td>
+                <td className="px-2 py-2 text-center tabular-nums text-mute">{all.drawn}</td>
+                <td className="px-2 py-2 text-center tabular-nums text-mute">{all.lost}</td>
+                {/* GD + Pts */}
+                <td className="px-2 py-2 text-center tabular-nums border-l border-line text-mute">
+                  {gd > 0 ? `+${gd}` : gd}
+                </td>
+                <td className="px-3 py-2 text-center scoreboard text-navy border-l border-line">
+                  {t["total-points"]}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -322,7 +292,7 @@ function UpcomingRow({
   return (
     <li>
       <Link
-        to={`/fixtures/${fixture.id}`}
+        to={`/fixtures/${fixture.slug ?? fixture.id}`}
         className="py-5 flex items-center gap-5 hover:bg-paper-warm/60 transition-colors -mx-3 px-3"
       >
         <div className="text-center w-14 shrink-0">

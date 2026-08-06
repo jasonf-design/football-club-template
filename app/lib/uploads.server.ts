@@ -195,6 +195,7 @@ export async function saveImage(
     .insert(media)
     .values({
       filename,
+      originalName: file.name || null,
       mimeType: file.type,
       width: outWidth,
       height: outHeight,

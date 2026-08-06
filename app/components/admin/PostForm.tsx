@@ -1,7 +1,7 @@
 import { Form, Link, useNavigation } from "react-router";
 import { ClientOnly } from "~/components/ClientOnly";
 import { PostEditor } from "./PostEditor";
-import { ImagePicker } from "./ImagePicker";
+import { MediaPickerField } from "./MediaPickerField";
 import { Field, FormRow, TextArea, TextInput } from "./Field";
 import { PrimaryButton, SecondaryButton } from "./AdminShell";
 
@@ -124,12 +124,10 @@ export function PostForm({
         </div>
 
         <div className="bg-paper border border-line p-5">
-          <ImagePicker
+          <MediaPickerField
             name="heroMediaId"
             label="Hero image"
-            initialUrl={initial.heroUrl}
-            initialMediaId={initial.heroMediaId}
-            aspect="aspect-[16/10]"
+            value={initial.heroMediaId ?? ""}
           />
         </div>
       </aside>

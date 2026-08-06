@@ -53,16 +53,25 @@ export async function loader() {
   const logoById = new Map(logoMedia.map((m) => [m.id, m.filename]));
 
   const staffRows = await db
-    .select({ name: coachingStaff.name, role: coachingStaff.role, photoMediaId: coachingStaff.photoMediaId })
+    .select({
+      name: coachingStaff.name,
+      role: coachingStaff.role,
+      photoMediaId: coachingStaff.photoMediaId,
+      sponsor1Name: coachingStaff.sponsor1Name,
+      sponsor1Url: coachingStaff.sponsor1Url,
+      sponsor1LogoMediaId: coachingStaff.sponsor1LogoMediaId,
+    })
     .from(coachingStaff)
     .where(and(eq(coachingStaff.team, "first"), eq(coachingStaff.active, true)))
     .orderBy(asc(coachingStaff.sortOrder), asc(coachingStaff.name));
 
-  const staffPhotoIds = staffRows.map((s) => s.photoMediaId).filter(Boolean) as string[];
-  const staffPhotos = staffPhotoIds.length
-    ? await db.select({ id: media.id, filename: media.filename }).from(media).where(inArray(media.id, staffPhotoIds))
+  const staffMediaIds = staffRows.flatMap((s) =>
+    [s.photoMediaId, s.sponsor1LogoMediaId].filter(Boolean)
+  ) as string[];
+  const staffMedia = staffMediaIds.length
+    ? await db.select({ id: media.id, filename: media.filename }).from(media).where(inArray(media.id, staffMediaIds))
     : [];
-  const staffPhotoById = new Map(staffPhotos.map((m) => [m.id, m.filename]));
+  const staffMediaById = new Map(staffMedia.map((m) => [m.id, m.filename]));
 
   return {
     squad: squad.map((p) => ({
@@ -73,7 +82,10 @@ export async function loader() {
     staff: staffRows.map((s) => ({
       name: s.name,
       role: s.role,
-      photoFilename: s.photoMediaId ? (staffPhotoById.get(s.photoMediaId) ?? null) : null,
+      photoFilename: s.photoMediaId ? (staffMediaById.get(s.photoMediaId) ?? null) : null,
+      sponsor1Name: s.sponsor1Name ?? null,
+      sponsor1Url: s.sponsor1Url ?? null,
+      sponsor1LogoFilename: s.sponsor1LogoMediaId ? (staffMediaById.get(s.sponsor1LogoMediaId) ?? null) : null,
     })),
   };
 }

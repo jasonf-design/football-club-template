@@ -34,7 +34,6 @@ export async function loader() {
 
 export default function ProgrammesIndex({ loaderData }: Route.ComponentProps) {
   const { programmes: rows } = loaderData;
-  const now = Date.now();
 
   return (
     <>
@@ -53,8 +52,6 @@ export default function ProgrammesIndex({ loaderData }: Route.ComponentProps) {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
             {rows.map((p) => {
               const kickoff = p.fixtureKickoff ? new Date(p.fixtureKickoff) : null;
-              const freeFrom = kickoff ? new Date(kickoff.getTime() + 48 * 60 * 60 * 1000) : null;
-              const isFree = !freeFrom || now >= freeFrom.getTime();
               return (
                 <Link key={p.id} to={`/programmes/${p.id}`} className="group block">
                   <div className="aspect-[3/4] bg-navy relative overflow-hidden">
@@ -70,11 +67,9 @@ export default function ProgrammesIndex({ loaderData }: Route.ComponentProps) {
                       <div className="absolute inset-0 bg-gradient-to-br from-navy via-navy-deep to-sky/20" />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/40 to-transparent" />
-                    {!isFree && (
-                      <div className="absolute top-3 right-3 bg-sky-deep text-paper text-[9px] uppercase tracking-[0.18em] px-2 py-1 font-semibold">
-                        Available soon
-                      </div>
-                    )}
+                    <div className="absolute top-3 right-3 bg-sky-deep text-paper text-[9px] uppercase tracking-[0.18em] px-2 py-1 font-semibold">
+                      Available now
+                    </div>
                     <div className="absolute bottom-0 left-0 right-0 p-4">
                       <div className="text-[9px] uppercase tracking-[0.2em] text-sky mb-1">{p.fixtureCompetition}</div>
                       <div className="font-serif text-paper text-base leading-tight">

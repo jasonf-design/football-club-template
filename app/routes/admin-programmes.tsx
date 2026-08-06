@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq, gte, and, not, like } from "drizzle-orm";
 import { Form, Link } from "react-router";
 import type { Route } from "./+types/admin-programmes";
 import { db } from "~/db.server";
@@ -20,6 +20,13 @@ export function meta(_: Route.MetaArgs) {
 
 export async function loader({ request }: Route.LoaderArgs) {
   await requireAdmin(request);
+
+  const upcomingHomeFixtures = await db
+    .select({ id: fixtures.id, opponent: fixtures.opponent, kickoff: fixtures.kickoff, competition: fixtures.competition })
+    .from(fixtures)
+    .where(and(eq(fixtures.homeAway, "home"), gte(fixtures.kickoff, new Date()), not(like(fixtures.competition, "%riendly%"))))
+    .orderBy(asc(fixtures.kickoff));
+
   const rows = await db
     .select({
       id: programmes.id,
@@ -28,6 +35,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       oppositionProfile: programmes.oppositionProfile,
       featuredPlayerId: programmes.featuredPlayerId,
       coverImageMediaId: programmes.coverImageMediaId,
+      fixtureId: programmes.fixtureId,
       fixtureOpponent: fixtures.opponent,
       fixtureHomeAway: fixtures.homeAway,
       fixtureKickoff: fixtures.kickoff,
@@ -39,7 +47,16 @@ export async function loader({ request }: Route.LoaderArgs) {
     .leftJoin(fixtures, eq(fixtures.id, programmes.fixtureId))
     .leftJoin(media, eq(media.id, programmes.coverImageMediaId))
     .orderBy(desc(programmes.createdAt));
-  return { programmes: rows };
+
+  // Map fixture id → programme for quick lookup
+  const progByFixture = new Map(rows.filter((r) => r.fixtureId).map((r) => [r.fixtureId!, r]));
+
+  const schedule = upcomingHomeFixtures.map((f) => ({
+    fixture: f,
+    programme: progByFixture.get(f.id) ?? null,
+  }));
+
+  return { programmes: rows, schedule };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -54,17 +71,21 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 function checklist(p: { managersNotes: string | null; oppositionProfile: string | null; featuredPlayerId: string | null; coverImageMediaId: string | null }) {
-  const done = [
-    !!p.coverImageMediaId,
-    !!(p.managersNotes?.trim()),
-    !!p.featuredPlayerId,
-    !!(p.oppositionProfile?.trim()),
-  ].filter(Boolean).length;
-  return { done, total: 4 };
+  const items = [
+    { label: "Cover image", done: !!p.coverImageMediaId },
+    { label: "Manager's notes", done: !!(p.managersNotes?.trim()) },
+    { label: "Featured player", done: !!p.featuredPlayerId },
+    { label: "Opposition profile", done: !!(p.oppositionProfile?.trim()) },
+  ];
+  return { items, done: items.filter((i) => i.done).length, total: items.length };
+}
+
+function daysUntil(isoDate: Date | string) {
+  return Math.ceil((new Date(isoDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
 export default function AdminProgrammesList({ loaderData }: Route.ComponentProps) {
-  const { programmes: rows } = loaderData;
+  const { programmes: rows, schedule } = loaderData;
   return (
     <AdminPage
       eyebrow="Content"
@@ -72,6 +93,64 @@ export default function AdminProgrammesList({ loaderData }: Route.ComponentProps
       description="Match-day digital programmes. Create one per home fixture, complete the checklist, then publish."
       actions={<LinkButton to="/admin/programmes/new">+ New programme</LinkButton>}
     >
+      {/* ── Prep schedule ── */}
+      {schedule.length > 0 && (
+        <div className="mb-8">
+          <div className="text-[10px] uppercase tracking-[0.24em] text-mute mb-3">Upcoming home fixtures</div>
+          <div className="space-y-2">
+            {schedule.map(({ fixture, programme: prog }) => {
+              const days = daysUntil(fixture.kickoff);
+              const kickoffDate = new Date(fixture.kickoff).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+              const kickoffTime = new Date(fixture.kickoff).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+              const urgency = days <= 3 ? "red" : days <= 10 ? "amber" : "green";
+              const urgencyClass = urgency === "red" ? "bg-red-50 border-red-200" : urgency === "amber" ? "bg-amber-50 border-amber-200" : "bg-paper border-line";
+              const dotClass = urgency === "red" ? "bg-red-500" : urgency === "amber" ? "bg-amber-400" : "bg-emerald-400";
+              const { items, done, total } = prog ? checklist(prog) : { items: [
+                { label: "Cover image", done: false },
+                { label: "Manager's notes", done: false },
+                { label: "Featured player", done: false },
+                { label: "Opposition profile", done: false },
+              ], done: 0, total: 4 };
+              return (
+                <div key={fixture.id} className={`border rounded px-4 py-3 flex items-center gap-4 ${urgencyClass}`}>
+                  <div className={`shrink-0 w-2 h-2 rounded-full ${dotClass}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-navy text-sm">DCFC vs {fixture.opponent}</div>
+                    <div className="text-xs text-mute mt-0.5">{kickoffDate} · {kickoffTime} · {fixture.competition}</div>
+                    {prog && (
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
+                        {items.map((item) => (
+                          <span key={item.label} className={`text-[10px] ${item.done ? "text-emerald-600" : urgency === "red" ? "text-red-600 font-semibold" : "text-amber-700"}`}>
+                            {item.done ? "✓" : "✗"} {item.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="shrink-0 flex items-center gap-3">
+                    <span className={`text-xs font-semibold tabular-nums ${urgency === "red" ? "text-red-600" : urgency === "amber" ? "text-amber-700" : "text-mute"}`}>
+                      {days === 0 ? "Today" : days === 1 ? "Tomorrow" : `${days} days`}
+                    </span>
+                    {prog ? (
+                      <Link to={`/admin/programmes/${prog.id}/edit`} className="text-[11px] uppercase tracking-[0.18em] text-navy border border-navy px-2.5 py-1 hover:bg-navy hover:text-white transition-colors">
+                        {done === total ? "Review" : "Complete"}
+                      </Link>
+                    ) : (
+                      <Form method="post" action="/admin/programmes/new">
+                        <input type="hidden" name="fixtureId" value={fixture.id} />
+                        <button type="submit" className="text-[11px] uppercase tracking-[0.18em] bg-navy text-white px-2.5 py-1 hover:bg-navy/80 transition-colors">
+                          Create
+                        </button>
+                      </Form>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="h-px bg-line mt-6 mb-2" />
+        </div>
+      )}
       {rows.length === 0 ? (
         <div className="bg-paper border border-line p-12 text-center">
           <div className="font-serif text-2xl text-navy">No programmes yet.</div>

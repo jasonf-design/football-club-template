@@ -1,6 +1,6 @@
 import { Form, Link, useNavigation } from "react-router";
 import { Field, FormRow, Select, TextInput } from "./Field";
-import { ImagePicker } from "./ImagePicker";
+import { MediaPickerField } from "./MediaPickerField";
 import { PrimaryButton } from "./AdminShell";
 
 export type SponsorFormData = {
@@ -88,12 +88,10 @@ export function SponsorForm({
         </div>
       </div>
       <div className="bg-paper border border-line p-5">
-        <ImagePicker
+        <MediaPickerField
           name="logoMediaId"
           label="Logo"
-          initialUrl={initial.logoUrl}
-          initialMediaId={initial.logoMediaId}
-          aspect="aspect-[3/2]"
+          value={initial.logoMediaId ?? ""}
         />
       </div>
     </Form>

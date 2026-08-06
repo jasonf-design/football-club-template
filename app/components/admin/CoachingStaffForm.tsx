@@ -1,6 +1,6 @@
 import { Form, Link, useNavigation } from "react-router";
 import { Field, FormRow, Select, TextInput } from "./Field";
-import { ImagePicker } from "./ImagePicker";
+import { MediaPickerField } from "./MediaPickerField";
 import { PrimaryButton } from "./AdminShell";
 
 export const COACHING_ROLES = [
@@ -26,6 +26,9 @@ export type CoachingStaffFormData = {
   role?: string | null;
   photoMediaId?: string | null;
   photoUrl?: string | null;
+  sponsor1Name?: string | null;
+  sponsor1Url?: string | null;
+  sponsor1LogoMediaId?: string | null;
   sortOrder?: number;
   active?: boolean;
 };
@@ -100,13 +103,24 @@ export function CoachingStaffForm({
         </div>
       </div>
 
+      <div className="bg-paper border border-line p-6 lg:p-8 space-y-5">
+        <div className="text-xs uppercase tracking-[0.2em] text-mute font-semibold border-b border-line pb-3">Sponsor</div>
+        <FormRow cols={2}>
+          <Field name="sponsor1Name" label="Sponsor name">
+            <TextInput name="sponsor1Name" defaultValue={initial.sponsor1Name ?? ""} placeholder="Acme Ltd" />
+          </Field>
+          <Field name="sponsor1Url" label="Sponsor website">
+            <TextInput name="sponsor1Url" defaultValue={initial.sponsor1Url ?? ""} placeholder="acme.co.uk" />
+          </Field>
+        </FormRow>
+        <MediaPickerField name="sponsor1LogoMediaId" label="Sponsor logo" value={initial.sponsor1LogoMediaId ?? ""} />
+      </div>
+
       <div className="bg-paper border border-line p-5 max-w-xs">
-        <ImagePicker
+        <MediaPickerField
           name="photoMediaId"
           label="Photo"
-          initialUrl={initial.photoUrl}
-          initialMediaId={initial.photoMediaId}
-          aspect="aspect-[1/1]"
+          value={initial.photoMediaId ?? ""}
         />
       </div>
     </Form>

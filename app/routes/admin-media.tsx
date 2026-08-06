@@ -11,7 +11,7 @@ import {
   DangerButton,
 } from "~/components/admin/AdminShell";
 import { uploadsDir } from "~/lib/uploads.server";
-import { uploadUrlFor } from "~/lib/uploads";
+import { uploadUrlFor, variantUrl } from "~/lib/uploads";
 import { useRef, useState } from "react";
 import { FocalPointPicker } from "~/components/admin/FocalPointPicker";
 
@@ -31,12 +31,21 @@ export async function loader({ request }: Route.LoaderArgs) {
 export async function action({ request }: Route.ActionArgs) {
   await requireAdmin(request);
   const form = await request.formData();
-  if (form.get("intent") !== "delete") return { ok: false };
+  const intent = form.get("intent");
+
+  if (intent === "rename") {
+    const id = form.get("id");
+    const name = form.get("name");
+    if (typeof id !== "string" || typeof name !== "string") return { ok: false };
+    await db.update(media).set({ originalName: name.trim() || null }).where(eq(media.id, id));
+    return { ok: true };
+  }
+
+  if (intent !== "delete") return { ok: false };
   const id = form.get("id");
   if (typeof id !== "string") return { ok: false };
 
-  // Refuse to delete if the media is still referenced — gives the admin a
-  // clear error rather than orphaning the post/player/sponsor's image.
+  // Refuse to delete if still referenced.
   const [usedByPost] = await db
     .select({ id: posts.id })
     .from(posts)
@@ -75,6 +84,56 @@ export async function action({ request }: Route.ActionArgs) {
   return { ok: true };
 }
 
+function RenameField({ id, displayName }: { id: string; displayName: string }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(displayName);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function save() {
+    setSaving(true);
+    const fd = new FormData();
+    fd.append("intent", "rename");
+    fd.append("id", id);
+    fd.append("name", value.trim());
+    await fetch("/admin/media", { method: "POST", body: fd });
+    setSaving(false);
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <input
+          ref={inputRef}
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") save();
+            if (e.key === "Escape") { setValue(displayName); setEditing(false); }
+          }}
+          onBlur={save}
+          disabled={saving}
+          className="flex-1 min-w-0 text-xs font-mono bg-paper border border-navy/40 px-1.5 py-0.5 outline-none"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      title="Click to rename"
+      className="w-full text-left font-mono truncate text-ink hover:text-navy group flex items-center gap-1"
+    >
+      <span className="truncate">{value}</span>
+      <span className="text-[9px] text-mute opacity-0 group-hover:opacity-100 flex-shrink-0">✎</span>
+    </button>
+  );
+}
+
 export default function AdminMedia({ loaderData, actionData }: Route.ComponentProps) {
   const { media } = loaderData;
   const [copied, setCopied] = useState<string | null>(null);
@@ -91,7 +150,7 @@ export default function AdminMedia({ loaderData, actionData }: Route.ComponentPr
     for (const file of Array.from(files)) {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch("/admin/upload", { method: "POST", body: fd });
+      const res = await fetch("/admin/api/upload", { method: "POST", body: fd });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         errors.push((body as { error?: string }).error ?? `${file.name} failed`);
@@ -165,8 +224,10 @@ export default function AdminMedia({ loaderData, actionData }: Route.ComponentPr
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
           {media.map((m) => {
             const url = uploadUrlFor(m.filename)!;
+            const thumbUrl = variantUrl(m.filename, 400, "avif");
             const fx = m.focalX ?? 0.5;
             const fy = m.focalY ?? 0.5;
+            const displayName = m.originalName ?? m.filename;
             return (
               <div key={m.id} className="bg-paper border border-line overflow-hidden">
                 <button
@@ -176,7 +237,7 @@ export default function AdminMedia({ loaderData, actionData }: Route.ComponentPr
                   onClick={() => setFocalTarget({ id: m.id, src: url, focalX: fx, focalY: fy })}
                 >
                   <img
-                    src={url}
+                    src={thumbUrl}
                     alt={m.alt ?? ""}
                     className="absolute inset-0 h-full w-full object-cover"
                     style={{ objectPosition: `${fx * 100}% ${fy * 100}%` }}
@@ -194,9 +255,7 @@ export default function AdminMedia({ loaderData, actionData }: Route.ComponentPr
                   </div>
                 </button>
                 <div className="p-3 text-xs">
-                  <div className="font-mono truncate text-ink" title={m.filename}>
-                    {m.filename}
-                  </div>
+                  <RenameField id={m.id} displayName={displayName} />
                   <div className="text-mute mt-1">
                     {m.width}×{m.height} · {Math.round(m.sizeBytes / 1024)} KB
                   </div>
