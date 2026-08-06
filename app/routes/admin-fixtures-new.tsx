@@ -36,6 +36,7 @@ const schema = z.object({
   homeScore: z.string().optional(),
   awayScore: z.string().optional(),
   notes: z.string().max(2000).optional(),
+  youtubeUrl: z.string().url().optional().or(z.literal("")),
 });
 
 export async function action({ request }: Route.ActionArgs) {
@@ -51,6 +52,7 @@ export async function action({ request }: Route.ActionArgs) {
     homeScore: form.get("homeScore") ?? undefined,
     awayScore: form.get("awayScore") ?? undefined,
     notes: form.get("notes") || undefined,
+    youtubeUrl: form.get("youtubeUrl") || undefined,
   });
   if (!parsed.success) {
     const errors: Record<string, string> = {};
@@ -72,6 +74,7 @@ export async function action({ request }: Route.ActionArgs) {
     homeScore: Number.isFinite(homeScore) ? homeScore : null,
     awayScore: Number.isFinite(awayScore) ? awayScore : null,
     notes: parsed.data.notes ?? null,
+    youtubeUrl: parsed.data.youtubeUrl || null,
     source: "manual",
     slug: makeFixtureSlug(parsed.data.opponent, kickoffDate),
   });

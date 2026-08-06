@@ -151,6 +151,25 @@ export default function FixtureDetail({ loaderData }: Route.ComponentProps) {
         </Container>
       </section>
 
+      {fixture.youtubeUrl && (() => {
+        const vid = youtubeId(fixture.youtubeUrl);
+        return vid ? (
+          <div className="bg-navy">
+            <Container size="wide" className="py-8">
+              <div className="aspect-video w-full">
+                <iframe
+                  src={`https://www.youtube.com/embed/${vid}`}
+                  title="Match video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              </div>
+            </Container>
+          </div>
+        ) : null;
+      })()}
+
       <Container size="wide" className="py-16">
         {detailError && (
           <div className="mb-10 border border-line bg-paper-warm/50 p-4 text-sm text-mute">
@@ -260,6 +279,17 @@ function MatchMeta({
       ))}
     </dl>
   );
+}
+
+function youtubeId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname === "youtu.be") return u.pathname.slice(1).split("?")[0];
+    if (u.hostname.includes("youtube.com")) {
+      return u.searchParams.get("v") ?? u.pathname.split("/").pop() ?? null;
+    }
+  } catch {}
+  return null;
 }
 
 function SectionHeading({ label }: { label: string }) {

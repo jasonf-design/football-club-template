@@ -127,6 +127,13 @@
       "when": 1754300000000,
       "tag": "0017_fixture_slug",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1754400000000,
+      "tag": "0018_fixture_youtube",
+      "breakpoints": true
     }
   ]
 }

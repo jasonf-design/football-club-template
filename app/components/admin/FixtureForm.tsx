@@ -12,6 +12,7 @@ export type FixtureFormData = {
   homeScore?: number | null;
   awayScore?: number | null;
   notes?: string | null;
+  youtubeUrl?: string | null;
 };
 
 function toLocalInput(d: Date | string | undefined): string {
@@ -103,6 +104,14 @@ export function FixtureForm({
           />
         </Field>
       </FormRow>
+
+      <Field name="youtubeUrl" label="YouTube match video" hint="Paste any YouTube URL" error={errors.youtubeUrl}>
+        <TextInput
+          name="youtubeUrl"
+          defaultValue={initial.youtubeUrl ?? ""}
+          placeholder="https://www.youtube.com/watch?v=..."
+        />
+      </Field>
 
       <Field name="notes" label="Notes" hint="Optional — admin-only" error={errors.notes}>
         <TextArea name="notes" defaultValue={initial.notes ?? ""} rows={3} />

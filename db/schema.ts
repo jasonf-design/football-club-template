@@ -146,6 +146,7 @@ export const fixtures = sqliteTable(
       .default("manual"),
     externalId: text("external_id"),
     slug: text("slug"),
+    youtubeUrl: text("youtube_url"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
