@@ -19,7 +19,7 @@ export default function Privacy() {
       />
       <Container size="default" className="py-16">
         <div className="prose prose-sm max-w-2xl text-ink">
-          <p className="text-mute text-sm">Last updated: June 2026</p>
+          <p className="text-mute text-sm">Last updated: August 2026</p>
 
           <Section title="Who we are">
             <p>
@@ -108,6 +108,15 @@ export default function Privacy() {
               <li>
                 <strong>Resend</strong> — transactional email delivery (contact form notifications).
               </li>
+              <li>
+                <strong>YouTube</strong> — match video highlights are embedded using YouTube's privacy-enhanced
+                mode (<code>youtube-nocookie.com</code>), which limits the cookies YouTube can set to only those
+                strictly necessary to play the video. YouTube may still set cookies if you interact with the player.
+                See{" "}
+                <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="text-sky-deep hover:underline">
+                  Google's privacy policy
+                </a>.
+              </li>
             </ul>
             <p>We do not share your personal data with any other third parties.</p>
           </Section>
@@ -140,7 +149,12 @@ export default function Privacy() {
             <p>
               This website uses a session cookie solely to keep administrators logged in to the club management
               system. This cookie is strictly necessary for that functionality and is not used for tracking or
-              advertising. No third-party cookies are set.
+              advertising.
+            </p>
+            <p>
+              When match highlight videos are embedded on fixture pages, they are served via YouTube's
+              privacy-enhanced mode. YouTube may set cookies when you interact with the video player.
+              No other third-party cookies are set.
             </p>
           </Section>
 

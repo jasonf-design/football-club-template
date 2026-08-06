@@ -17,7 +17,40 @@ export async function loader({ request }: Route.LoaderArgs) {
   return null;
 }
 
+// In-memory brute-force guard: max 10 attempts per IP per 15 minutes.
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function getClientIp(request: Request): string {
+  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+}
+
+function checkRateLimit(ip: string): { blocked: boolean; remaining: number } {
+  const now = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    loginAttempts.set(ip, { count: 0, resetAt: now + 15 * 60 * 1000 });
+    return { blocked: false, remaining: 10 };
+  }
+  return { blocked: entry.count >= 10, remaining: Math.max(0, 10 - entry.count) };
+}
+
+function recordFailedAttempt(ip: string) {
+  const now = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    loginAttempts.set(ip, { count: 1, resetAt: now + 15 * 60 * 1000 });
+  } else {
+    entry.count += 1;
+  }
+}
+
 export async function action({ request }: Route.ActionArgs) {
+  const ip = getClientIp(request);
+  const { blocked } = checkRateLimit(ip);
+  if (blocked) {
+    return { error: "Too many failed attempts. Please try again in 15 minutes." };
+  }
+
   const formData = await request.formData();
   const email = String(formData.get("email") ?? "")
     .toLowerCase()
@@ -48,6 +81,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   if (!user || !ok) {
+    recordFailedAttempt(ip);
     return { error: "Email or password isn't right." };
   }
 

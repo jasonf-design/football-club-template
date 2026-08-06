@@ -158,7 +158,7 @@ export default function FixtureDetail({ loaderData }: Route.ComponentProps) {
             <Container size="wide" className="py-8">
               <div className="aspect-video w-full">
                 <iframe
-                  src={`https://www.youtube.com/embed/${vid}`}
+                  src={`https://www.youtube-nocookie.com/embed/${vid}`}
                   title="Match video"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
