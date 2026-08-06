@@ -123,6 +123,7 @@ export default function Fixtures({ loaderData }: Route.ComponentProps) {
                   awayScore={r.awayScore}
                   competition={r.competition}
                   date={r.kickoff}
+                  youtubeUrl={r.youtubeUrl}
                 />
               ))}
             </div>
@@ -282,11 +283,13 @@ function UpcomingRow({
 }: {
   fixture: {
     id: string;
+    slug: string | null;
     competition: string;
     opponent: string;
     homeAway: "home" | "away";
     kickoff: Date;
     venue: string | null;
+    youtubeUrl: string | null;
   };
 }) {
   const k = fixture.kickoff;
@@ -318,12 +321,19 @@ function UpcomingRow({
             <div className="text-xs text-mute mt-0.5">{fixture.venue}</div>
           )}
         </div>
-        <div className="text-right shrink-0">
-          <div className="scoreboard text-xl text-navy">
-            {k.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-          </div>
-          <div className="text-[10px] uppercase tracking-[0.22em] text-sky-deep mt-1">
-            {fixture.homeAway === "home" ? "Home" : "Away"}
+        <div className="flex items-center gap-3 shrink-0">
+          {fixture.youtubeUrl && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] font-semibold bg-[#FF0000] text-white">
+              ▶ Video
+            </span>
+          )}
+          <div className="text-right">
+            <div className="scoreboard text-xl text-navy">
+              {k.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+            </div>
+            <div className="text-[10px] uppercase tracking-[0.22em] text-sky-deep mt-1">
+              {fixture.homeAway === "home" ? "Home" : "Away"}
+            </div>
           </div>
         </div>
       </Link>

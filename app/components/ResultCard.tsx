@@ -9,6 +9,7 @@ export function ResultCard({
   awayScore,
   competition,
   date,
+  youtubeUrl,
 }: {
   id?: string;
   slug?: string | null;
@@ -18,6 +19,7 @@ export function ResultCard({
   awayScore: number | null;
   competition: string;
   date: Date;
+  youtubeUrl?: string | null;
 }) {
   const us = homeAway === "home" ? homeScore : awayScore;
   const them = homeAway === "home" ? awayScore : homeScore;
@@ -45,6 +47,13 @@ export function ResultCard({
           month: "short",
         })}
       </div>
+      {youtubeUrl && (
+        <div className="mt-1 mb-0.5">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] font-semibold bg-[#FF0000] text-white">
+            ▶ Video
+          </span>
+        </div>
+      )}
       <div className="mt-1.5 flex items-baseline gap-4">
         <div className="flex-1 min-w-0">
           <div className="text-xs uppercase tracking-wider text-mute">
