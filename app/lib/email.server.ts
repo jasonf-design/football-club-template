@@ -6,7 +6,6 @@ let _resend: Resend | null = null;
 export function isResendConfigured(): boolean {
   return !!(
     process.env.RESEND_API_KEY &&
-    process.env.CONTACT_NOTIFY_TO &&
     process.env.CONTACT_NOTIFY_FROM
   );
 }
