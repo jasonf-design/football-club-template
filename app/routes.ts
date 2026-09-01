@@ -43,6 +43,12 @@ export default [
   // Stripe webhook — public, no layout, no auth (signature verified)
   route("api/stripe-webhook", "routes/stripe-webhook.tsx"),
 
+  // Social media image generation — public GET endpoints returning PNG
+  route("api/social/result",  "routes/api-social-result.tsx"),
+  route("api/social/fixture", "routes/api-social-fixture.tsx"),
+  route("api/social/signing", "routes/api-social-signing.tsx"),
+  route("api/social/news",    "routes/api-social-news.tsx"),
+
   // Cron endpoints — protected by CRON_SECRET bearer token
   route("api/cron/programmes", "routes/api-cron-programmes.tsx"),
 

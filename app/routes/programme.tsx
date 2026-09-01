@@ -39,6 +39,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     ? await db.select({ filename: media.filename, focalX: media.focalX, focalY: media.focalY }).from(media).where(eq(media.id, prog.coverImageMediaId)).limit(1)
     : [null];
 
+  const [chairmansNotesImage] = prog.chairmansNotesImageMediaId
+    ? await db.select({ filename: media.filename, focalX: media.focalX, focalY: media.focalY }).from(media).where(eq(media.id, prog.chairmansNotesImageMediaId)).limit(1)
+    : [null];
+
   const allSponsors = await db
     .select({ id: sponsors.id, name: sponsors.name, url: sponsors.url, tier: sponsors.tier, logoFilename: media.filename })
     .from(sponsors)
@@ -143,7 +147,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     : false;
 
   return {
-    prog, fixture, kickoff, isLocked, coverImage, coverSponsor: coverSponsor ?? null,
+    prog, fixture, kickoff, isLocked, coverImage, chairmansNotesImage: chairmansNotesImage ?? null, coverSponsor: coverSponsor ?? null,
     featuredSponsor: featuredSponsor ?? null,
     featuredPlayer: featuredPlayerRow ? {
       ...featuredPlayerRow,
@@ -467,7 +471,7 @@ function BrochureLayout({
 
 export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
   const {
-    prog, fixture, kickoff, isLocked, coverImage, coverSponsor,
+    prog, fixture, kickoff, isLocked, coverImage, chairmansNotesImage, coverSponsor,
     featuredSponsor, featuredPlayer, platinumSponsors, goldSponsors, silverSponsors,
     firstTeamPlayers, firstTeamStaff, allFixtures, leagueSnapshot, isNcelGame, isLeagueCup, isPreview,
   } = loaderData;
@@ -743,8 +747,7 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
                   <tbody>
                     {[
                       ["Chairman", "Mark Chappell"],
-                      ["Dir. of Football", "Blake Campbell"],
-                      ["Club Secretary", "Denis Popan"],
+                      ["Club Secretary", "Ian Jones"],
                       ["Match Secretary", "Lee Dickinson"],
                       ["Commercial Mgr", "Jason Fry"],
                     ].map(([label, value]) => (
@@ -765,7 +768,7 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
                       ["Manager", "John Powney"],
                       ["Asst. Manager", "Josh Meade"],
                       ["1st Team Coach", "Cameron Rappit"],
-                      ["Coach", "Dom Sessay"],
+                      ["Coach", "Stuart Ludlam"],
                       ["Fitness & S&C", "Jake Gregory"],
                       ["Physiotherapist", "Izzy Trevillion"],
                     ].map(([label, value]) => (
@@ -1527,8 +1530,8 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
     ),
   });
 
-  // ── 10b. Thoughts from the Club ──────────────────────────────────────────────
-  if (prog.chairmansNotes || prog.blakesThoughts) {
+  // ── 10b. Chairman's Notes ─────────────────────────────────────────────────────
+  if (prog.chairmansNotes) {
     pages.push({
       id: "thoughts",
       el: (
@@ -1541,8 +1544,8 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
             <div className="flex-1 h-px bg-navy/30" />
           </div>
 
-          {/* Chairman's Notes — top half */}
-          <div className="flex-1 min-h-0 flex flex-col px-5 pt-3 pb-2 border-b border-line overflow-hidden">
+          {/* Chairman's Notes — top section */}
+          <div className={`${chairmansNotesImage ? "shrink-0" : "flex-1"} min-h-0 flex flex-col px-5 pt-3 pb-2 overflow-hidden`} style={chairmansNotesImage ? { height: "55%" } : undefined}>
             <div className="shrink-0 flex items-start justify-between mb-2">
               <div>
                 <div className="text-[7px] uppercase tracking-[0.35em] text-sky-deep font-black mb-0.5">Chairman's Notes</div>
@@ -1550,28 +1553,31 @@ export default function ProgrammeViewer({ loaderData }: Route.ComponentProps) {
               </div>
               <div className="font-serif text-navy/20 leading-none select-none shrink-0" style={{ fontSize: "3rem", marginTop: "-0.25rem" }}>"</div>
             </div>
-            <div className="flex-1 min-h-0 overflow-hidden text-[7.5px] leading-relaxed text-ink" style={{ columnCount: 2, columnGap: "1rem", columnFill: "balance" }}>
+            <div className="flex-1 min-h-0 overflow-hidden text-[9.5px] leading-relaxed text-ink" style={{ columnCount: 2, columnGap: "1rem", columnFill: "balance" }}>
               {(prog.chairmansNotes ?? "").split("\n\n").filter(Boolean).map((para, i) => (
-                <p key={i} className="mb-1.5">{para}</p>
+                <p key={i} className="mb-2.5">{para}</p>
               ))}
             </div>
           </div>
 
-          {/* Blake's Thoughts — bottom half */}
-          <div className="flex-1 min-h-0 flex flex-col px-5 pt-3 pb-2 overflow-hidden" style={{ background: "rgba(10,20,50,0.07)" }}>
-            <div className="shrink-0 flex items-start justify-between mb-2">
-              <div>
-                <div className="text-[7px] uppercase tracking-[0.35em] text-sky-deep font-black mb-0.5">Director of Football</div>
-                <div className="font-serif text-navy font-bold leading-tight" style={{ fontSize: "clamp(0.95rem, 3vw, 1.3rem)" }}>Blake Campbell</div>
+          {/* Bottom image — shown when set */}
+          {chairmansNotesImage && (
+            <div className="shrink-0 border-t border-line flex flex-col overflow-hidden" style={{ height: "45%" }}>
+              {prog.chairmansNotesImageCaption && (
+                <div className="shrink-0 px-5 py-2 bg-navy/5 border-b border-line">
+                  <p className="text-[8.5px] italic text-navy/80 leading-snug">{prog.chairmansNotesImageCaption}</p>
+                </div>
+              )}
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <img
+                  src={variantUrl(chairmansNotesImage.filename, 1200, "jpeg")}
+                  alt={prog.chairmansNotesImageCaption ?? ""}
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: `${(chairmansNotesImage.focalX ?? 0.5) * 100}% ${(chairmansNotesImage.focalY ?? 0.5) * 100}%` }}
+                />
               </div>
-              <div className="font-serif text-navy/20 leading-none select-none shrink-0" style={{ fontSize: "3rem", marginTop: "-0.25rem" }}>"</div>
             </div>
-            <div className="flex-1 min-h-0 overflow-hidden text-[7.5px] leading-relaxed text-ink" style={{ columnCount: 2, columnGap: "1rem", columnFill: "balance" }}>
-              {(prog.blakesThoughts ?? "").split("\n\n").filter(Boolean).map((para, i) => (
-                <p key={i} className="mb-1.5">{para}</p>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* Footer */}
           <div className="shrink-0 border-t border-line px-4 py-1.5 flex items-center justify-between">

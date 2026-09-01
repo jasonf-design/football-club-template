@@ -300,6 +300,8 @@ export const programmes = sqliteTable("programmes", {
   oppositionSquad: text("opposition_squad"),
   oppositionManagement: text("opposition_management"),
   chairmansNotes: text("chairmans_notes"),
+  chairmansNotesImageMediaId: text("chairmans_notes_image_media_id").references(() => media.id, { onDelete: "set null" }),
+  chairmansNotesImageCaption: text("chairmans_notes_image_caption"),
   blakesThoughts: text("blakes_thoughts"),
   leagueNotifiedAt: integer("league_notified_at", { mode: "timestamp" }),
   createdAt: createdAt(),

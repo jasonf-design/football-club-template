@@ -103,10 +103,13 @@ export async function action({ request, params }: Route.ActionArgs) {
     return { saved: "chairmans-notes" };
   }
 
-  if (intent === "blakes-thoughts") {
-    await db.update(programmes).set({ blakesThoughts: String(form.get("blakesThoughts") ?? "").trim() || null })
-      .where(eq(programmes.id, params.id));
-    return { saved: "blakes-thoughts" };
+  if (intent === "chairmans-notes-image") {
+    const chairmansNotesImageMediaId = form.get("chairmansNotesImageMediaId");
+    await db.update(programmes).set({
+      chairmansNotesImageMediaId: typeof chairmansNotesImageMediaId === "string" && chairmansNotesImageMediaId ? chairmansNotesImageMediaId : null,
+      chairmansNotesImageCaption: String(form.get("chairmansNotesImageCaption") ?? "").trim() || null,
+    }).where(eq(programmes.id, params.id));
+    return { saved: "chairmans-notes-image" };
   }
 
   if (intent === "featured-player") {
@@ -577,7 +580,6 @@ export default function AdminProgrammesEdit({ loaderData }: Route.ComponentProps
     cover: !!prog.coverImageMediaId,
     notes: !!(prog.managersNotes?.trim()),
     chairmans: !!(prog.chairmansNotes?.trim()),
-    blakes: !!(prog.blakesThoughts?.trim()),
     player: !!prog.featuredPlayerId,
     opposition: !!(prog.oppositionProfile?.trim()),
   };
@@ -598,7 +600,6 @@ export default function AdminProgrammesEdit({ loaderData }: Route.ComponentProps
               <CheckItem done={checkDone.cover} label="Cover image" />
               <CheckItem done={checkDone.notes} label="Manager's notes" />
               <CheckItem done={checkDone.chairmans} label="Chairman's notes" />
-              <CheckItem done={checkDone.blakes} label="Blake's thoughts" />
               <CheckItem done={checkDone.player} label="Featured player" />
               <CheckItem done={checkDone.opposition} label="Opposition profile" />
             </div>
@@ -758,26 +759,43 @@ export default function AdminProgrammesEdit({ loaderData }: Route.ComponentProps
               />
               <PrimaryButton type="submit">Save notes</PrimaryButton>
             </Form>
-          </section>
 
-          {/* Blake's thoughts */}
-          <section className="border border-line p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className={["h-2 w-2 rounded-full", checkDone.blakes ? "bg-sky-deep" : "bg-line"].join(" ")} />
-              <h2 className="text-[10px] uppercase tracking-[0.24em] text-mute">Blake's thoughts</h2>
+            <div className="mt-6 pt-6 border-t border-line">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-mute mb-1">Bottom image (optional)</div>
+              <p className="text-xs text-mute mb-4">Fills the lower half of the Chairman's page when set. Works best with a wide landscape photo.</p>
+              <SavedBanner intent="chairmans-notes-image" saved={saved ?? null} />
+              <Form method="post" className="space-y-3">
+                <input type="hidden" name="intent" value="chairmans-notes-image" />
+                <div>
+                  <label className="block text-[10px] uppercase tracking-[0.2em] text-mute mb-1.5">Caption (optional)</label>
+                  <input
+                    type="text"
+                    name="chairmansNotesImageCaption"
+                    defaultValue={prog.chairmansNotesImageCaption ?? ""}
+                    placeholder="e.g. Happy 18th Birthday Ashton!"
+                    className="w-full bg-paper border border-line focus:border-navy outline-none px-3 py-2 text-sm text-ink"
+                  />
+                </div>
+                <MediaPickerField
+                  name="chairmansNotesImageMediaId"
+                  value={prog.chairmansNotesImageMediaId ?? ""}
+                  media={imageOptions}
+                />
+                <div className="flex items-center gap-3">
+                  <PrimaryButton type="submit">Save image</PrimaryButton>
+                  {prog.chairmansNotesImageMediaId && (
+                    <button
+                      type="submit"
+                      name="chairmansNotesImageMediaId"
+                      value=""
+                      className="text-xs text-mute underline underline-offset-2"
+                    >
+                      Remove image
+                    </button>
+                  )}
+                </div>
+              </Form>
             </div>
-            <SavedBanner intent="blakes-thoughts" saved={saved ?? null} />
-            <Form method="post" className="space-y-4">
-              <input type="hidden" name="intent" value="blakes-thoughts" />
-              <textarea
-                name="blakesThoughts"
-                rows={8}
-                defaultValue={prog.blakesThoughts ?? ""}
-                placeholder="Thoughts from Blake Campbell, Director of Football..."
-                className="w-full bg-paper border border-line focus:border-navy outline-none px-4 py-3 text-base text-ink resize-y"
-              />
-              <PrimaryButton type="submit">Save thoughts</PrimaryButton>
-            </Form>
           </section>
 
           {/* Featured player */}

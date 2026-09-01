@@ -12,3 +12,7 @@
 /local.sqlite-wal
 /local.sqlite-shm
 /uploads/
+/db.sqlite
+/db.sqlite-journal
+/db.sqlite-wal
+/db.sqlite-shm
