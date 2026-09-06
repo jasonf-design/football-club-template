@@ -1,28 +1,36 @@
 /**
- * Club configuration — edit this file to rebrand for a new football club.
+ * Club configuration — edit this file to set up your football club website.
  *
- * Also update the colour palette in app.css (@theme block) to match the club's
- * brand colours. The colour names (navy, sky, etc.) are semantic aliases;
- * you only need to change the hex values there, not the class names in components.
+ * This is the main file to change when rebranding for a new club.
+ * After editing, also:
+ *   1. Replace public/crest-128.avif, .webp, .png with your club crest (128×128px)
+ *   2. Replace public/favicon.ico, favicon-32.png, apple-touch-icon.png
+ *   3. Update brand colours in app/app.css (@theme block):
+ *      --color-navy = your primary colour
+ *      --color-sky  = your secondary colour
+ *      (class names throughout the app stay the same — just change the hex values)
+ *   4. Configure your environment variables (copy .env.example to .env)
+ *
+ * See SETUP.md for the full setup walkthrough.
  */
 export const club = {
   name: {
-    /** Full legal name: "Doncaster City Football Club" */
-    full: "Doncaster City Football Club",
-    /** All-caps display name for header/footer: "DONCASTER CITY FC" */
-    display: "DONCASTER CITY FC",
-    /** All-caps short display (header): "DONCASTER CITY" */
-    displayShort: "DONCASTER CITY",
-    /** Short name used in meta titles: "Doncaster City FC" */
-    short: "Doncaster City FC",
-    /** Abbreviation for compact UI (admin sidebar): "DCFC" */
-    abbreviation: "DCFC",
-    /** City name used in hero heading: "Doncaster" */
-    city: "Doncaster",
+    /** Full legal name: e.g. "Riverside City Football Club" */
+    full: "Riverside City Football Club",
+    /** All-caps display name for header/footer: e.g. "RIVERSIDE CITY FC" */
+    display: "RIVERSIDE CITY FC",
+    /** All-caps short display (header): e.g. "RIVERSIDE CITY" */
+    displayShort: "RIVERSIDE CITY",
+    /** Short name used in meta titles: e.g. "Riverside City FC" */
+    short: "Riverside City FC",
+    /** Abbreviation for compact UI (admin sidebar): e.g. "RCFC" */
+    abbreviation: "RCFC",
+    /** City name used in hero heading: e.g. "Riverside" */
+    city: "Riverside",
     /** Club tagline shown in footer */
     tagline: "Built by the community, for the community.",
     /** Year founded */
-    established: "2022",
+    established: "2024",
   },
 
   hero: {
@@ -32,51 +40,54 @@ export const club = {
   },
 
   social: {
-    twitter: "https://x.com/doncastercityfc",
-    instagram: "https://www.instagram.com/doncastercityfc",
-    facebook: "https://www.facebook.com/doncastercityfc",
-    tiktok: "https://www.tiktok.com/@doncastercityfc",
-    youtube: "https://www.youtube.com/@DoncasterCity",
-    /** Set to null to hide a platform in the footer */
-    bluesky: "@doncastercityfc.bsky.social" as string | null,
+    /** Set any to null to hide that platform in the footer */
+    twitter: null as string | null,
+    instagram: null as string | null,
+    facebook: null as string | null,
+    tiktok: null as string | null,
+    youtube: null as string | null,
+    bluesky: null as string | null,
   },
 
   contact: {
     /** Email addresses that receive contact-form notifications */
-    adminEmails: [
-      "jason.f@DoncasterCity-FC.com",
-      "Mark@DoncasterCity-FC.com",
-    ],
+    adminEmails: ["admin@yourclub.com"],
   },
 
   fwp: {
-    /** Football Web Pages team ID for fixture/result sync */
-    teamId: 3314,
+    /**
+     * Football Web Pages team ID for fixture/result sync.
+     * Find yours at footballwebpages.co.uk — search your club and note the
+     * team ID in the URL. Set to 0 to disable sync until you have your ID.
+     */
+    teamId: 0,
   },
 
   fundraising: {
-    /** Set to null to hide the easyfundraising block in the footer */
-    easyfundraisingUrl:
-      "https://www.easyfundraising.org.uk/causes/doncaster-city-fc/" as string | null,
+    /**
+     * easyfundraising.org.uk campaign URL for your club.
+     * Set to null to hide the fundraising block in the footer.
+     */
+    easyfundraisingUrl: null as string | null,
   },
 
   /** Canonical public URL — also set via PUBLIC_URL env var on the server */
-  siteUrl: "https://doncastercity-fc.com",
+  siteUrl: "https://yourclub.com",
 
   session: {
-    /** Browser cookie name for the auth session */
-    cookieName: "__dcfc_session",
+    /** Browser cookie name — use your club abbreviation, e.g. "__rcfc_session" */
+    cookieName: "__rcfc_session",
     /** localStorage key for the cart */
-    cartKey: "dcfc.cart.v1",
+    cartKey: "rcfc.cart.v1",
     /** CustomEvent name fired when the cart changes */
-    cartEvent: "dcfc:cart-changed",
+    cartEvent: "rcfc:cart-changed",
   },
 
   theme: {
     /**
-     * Primary brand colour used for <meta name="theme-color">.
-     * Must match --color-navy in app.css.
+     * Primary brand colour for <meta name="theme-color">.
+     * Must match --color-navy in app/app.css.
      */
-    metaThemeColor: "#0E1F44",
+    metaThemeColor: "#0e1f44",
   },
 };
