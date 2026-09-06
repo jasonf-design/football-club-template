@@ -5,14 +5,15 @@ import { media, posts } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
 import { NewsCard } from "~/components/NewsCard";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "News · Doncaster City FC" },
+    { title: `News · ${club.name.short}` },
     {
       name: "description",
       content:
-        "Match reports, club announcements, transfer news and stories from Doncaster City FC.",
+        "Match reports, club announcements, transfer news and stories from .",
     },
   ];
 }

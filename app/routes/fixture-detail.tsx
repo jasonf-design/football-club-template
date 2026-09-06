@@ -10,10 +10,11 @@ import {
   type MatchGoal,
   type MatchLineupEntry,
 } from "~/lib/fwp.server";
+import { club } from "~/club.config";
 
 export function meta({ data }: Route.MetaArgs) {
   if (!data?.fixture) {
-    return [{ title: "Match not found · Doncaster City FC" }];
+    return [{ title: `Match not found · ${club.name.short}` }];
   }
   const { fixture } = data;
   const us = fixture.homeAway === "home" ? fixture.homeScore : fixture.awayScore;

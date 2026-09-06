@@ -10,13 +10,14 @@ import { sendProgrammeInterestNotification } from "~/lib/email.server";
 import { Crest } from "~/components/Crest";
 import { pitchSponsors, getSponsorAt } from "~/lib/pitchSponsors";
 import { z } from "zod";
+import { club } from "~/club.config";
 
 export function meta({ data }: Route.MetaArgs) {
-  if (!data) return [{ title: "Programme · Doncaster City FC" }];
+  if (!data) return [{ title: `Programme · ${club.name.short}` }];
   const { fixture } = data as Awaited<ReturnType<typeof loader>>;
   const title = fixture ? `vs ${fixture.opponent} — DCFC Match Programme` : "Match Programme";
   return [
-    { title: `${title} · Doncaster City FC` },
+    { title: `${title} · ${club.name.short}` },
     { name: "description", content: `Official Doncaster City FC digital match programme${fixture ? ` for the fixture against ${fixture.opponent}` : ""}.` },
   ];
 }

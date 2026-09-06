@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 import type { SponsorUri } from "./social-sponsor.server";
+import { club } from "~/club.config";
 
 const C = {
   navy:   "#0e1f44",
@@ -423,7 +424,7 @@ ${txt("SIGNED", cx, badgeCY + badgeH * 0.36, { size: signedSz, fill: C.white, fa
 ${txt(p.name.toUpperCase(), cx, nameY, { size: nameSz, fill: C.white, family: FONT_DISPLAY, weight: 900, maxWidth: Math.round(w * 0.88) })}
 ${p.position ? txt(p.position.toUpperCase(), cx, posY, { size: posSz, fill: C.sky, maxWidth: Math.round(w * 0.74) }) : ""}
 <line x1="${Math.round(w * 0.15)}" y1="${Math.round(divY)}" x2="${Math.round(w * 0.85)}" y2="${Math.round(divY)}" stroke="${C.sky}" stroke-width="1" opacity="0.28"/>
-${txt("DONCASTER CITY FC", cx, clubY, { size: clubSz, fill: "rgba(255,255,255,0.42)", spacing: 3 })}`;
+${txt(club.name.display, cx, clubY, { size: clubSz, fill: "rgba(255,255,255,0.42)", spacing: 3 })}`;
 
   return chrome(w, h, inner, sponsors);
 }
@@ -508,7 +509,7 @@ export function buildNewsSvg(p: NewsParams, w = 1080, h = 1080, sponsors: Sponso
 <rect x="0" y="${h - BAR}" width="${w}" height="${BAR}" fill="${C.sky}"/>
 ${crestDataUri ? `<image href="${crestDataUri}" x="${crestX}" y="${crestY}" width="${crestSz}" height="${crestSz}" preserveAspectRatio="xMidYMid meet"/>` : ""}
 <rect x="${accentX}" y="${Math.round(accentY1)}" width="${accentW}" height="${Math.round(accentY2 - accentY1)}" fill="${C.sky}"/>
-${txt("DONCASTER CITY FC", lx, dcfcY, { size: dcfcSz, fill: "rgba(255,255,255,0.5)", family: FONT_BODY, anchor: "start", spacing: 2 })}
+${txt(club.name.display, lx, dcfcY, { size: dcfcSz, fill: "rgba(255,255,255,0.5)", family: FONT_BODY, anchor: "start", spacing: 2 })}
 ${txt("NEWS", lx, newsY, { size: newsSz, fill: C.sky, family: FONT_DISPLAY, weight: 900, anchor: "start", spacing: 4 })}
 ${titleLines}
 ${p.publishedAt ? txt(fmtDate(p.publishedAt), lx, dateY, { size: dateSz, fill: "rgba(255,255,255,0.5)", anchor: "start" }) : ""}

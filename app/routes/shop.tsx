@@ -9,14 +9,15 @@ import {
   variantSrcset,
   variantUrl,
 } from "~/lib/uploads";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Shop · Doncaster City FC" },
+    { title: `Shop · ${club.name.short}` },
     {
       name: "description",
       content:
-        "Official Doncaster City FC merchandise. Every purchase goes back into the club.",
+        "Official  merchandise. Every purchase goes back into the club.",
     },
   ];
 }

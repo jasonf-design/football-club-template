@@ -9,9 +9,10 @@ import {
   getStripe,
   isStripeConfigured,
 } from "~/lib/stripe.server";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Thank you · Doncaster City FC" }];
+  return [{ title: `Thank you · ${club.name.short}` }];
 }
 
 /**

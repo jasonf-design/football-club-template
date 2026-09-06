@@ -5,11 +5,12 @@ import { db } from "~/db.server";
 import { media, posts } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { uploadUrlFor } from "~/lib/uploads";
+import { club } from "~/club.config";
 
 export function meta({ data }: Route.MetaArgs) {
-  if (!data?.post) return [{ title: "Story not found · Doncaster City FC" }];
+  if (!data?.post) return [{ title: `Story not found · ${club.name.short}` }];
   return [
-    { title: `${data.post.title} · Doncaster City FC` },
+    { title: `${data.post.title} · ${club.name.short}` },
     { name: "description", content: data.post.excerpt ?? undefined },
   ];
 }

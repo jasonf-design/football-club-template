@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import type { Route } from "./+types/partnership";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Commercial Partnerships · Doncaster City FC" },
+    { title: `Commercial Partnerships · ${club.name.short}` },
     {
       name: "description",
       content:

@@ -13,9 +13,10 @@ import {
   publicUrl,
   StripeNotConfiguredError,
 } from "~/lib/stripe.server";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Cart · Doncaster City FC" }];
+  return [{ title: `Cart · ${club.name.short}` }];
 }
 
 export async function loader() {

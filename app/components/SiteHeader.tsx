@@ -2,6 +2,7 @@ import { NavLink, Link, useLocation } from "react-router";
 import { useState, useRef, useEffect } from "react";
 import { Crest } from "./Crest";
 import { CartIcon } from "./CartIcon";
+import { club } from "~/club.config";
 
 const TEAMS_NAV = [
   { to: "/team", label: "1st Team" },
@@ -153,10 +154,10 @@ export function SiteHeader({
             <Crest className="h-12 w-12" />
             <div className="leading-tight">
               <div className="font-display text-xl tracking-wide text-navy">
-                DONCASTER&nbsp;CITY
+                {club.name.displayShort}
               </div>
               <div className="text-[10px] tracking-[0.28em] uppercase text-mute -mt-0.5">
-                Football Club · Est 2022
+                Football Club · Est {club.name.established}
               </div>
             </div>
           </Link>

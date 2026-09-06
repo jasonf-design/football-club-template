@@ -7,10 +7,11 @@ import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
 import { variantSrcset, variantUrl } from "~/lib/uploads";
 import { CoachingSection } from "~/components/CoachingSection";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "First Team · Doncaster City FC" },
+    { title: `First Team · ${club.name.short}` },
     {
       name: "description",
       content: "Meet the players representing Doncaster City this season.",

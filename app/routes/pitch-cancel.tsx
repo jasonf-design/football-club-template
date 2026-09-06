@@ -5,9 +5,10 @@ import { db } from "~/db.server";
 import { pitchOrders, pitchSquares } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Checkout cancelled · Doncaster City FC" }];
+  return [{ title: `Checkout cancelled · ${club.name.short}` }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {

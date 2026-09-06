@@ -1,5 +1,6 @@
 import { Form, Link, NavLink, useLocation } from "react-router";
 import { Crest } from "./Crest";
+import { club } from "~/club.config";
 
 type NavItem = { to: string; label: string; end?: boolean; adminOnly?: boolean };
 
@@ -59,7 +60,7 @@ export function AdminSidebar({
       >
         <Crest className="h-9 w-9" />
         <div className="leading-tight">
-          <div className="font-display text-lg tracking-wide">DCFC</div>
+          <div className="font-display text-lg tracking-wide">{club.name.abbreviation}</div>
           <div className="text-[10px] uppercase tracking-[0.22em] text-sky">
             Admin
           </div>

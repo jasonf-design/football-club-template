@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { club } from "~/club.config";
 import { asc, eq } from "drizzle-orm";
 import { Form, Link, redirect, useActionData, useLoaderData } from "react-router";
 import type { Route } from "./+types/admin-programmes-edit";
@@ -179,7 +180,7 @@ export async function action({ request, params }: Route.ActionArgs) {
     const [fixture] = prog.fixtureId
       ? await db.select().from(fixtures).where(eq(fixtures.id, prog.fixtureId)).limit(1)
       : [null];
-    const publicUrl = process.env.PUBLIC_URL ?? "https://doncastercity-fc.com";
+    const publicUrl = process.env.PUBLIC_URL ?? club.siteUrl;
     const programmeUrl = `${publicUrl}/programmes/${prog.id}`;
     const programmeTitle = fixture ? `DCFC vs ${fixture.opponent}` : "DCFC Programme";
     const matchDate = fixture

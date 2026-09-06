@@ -14,9 +14,10 @@ import {
 } from "../../db/schema";
 import { isStripeConfigured } from "~/lib/stripe.server";
 import { isResendConfigured } from "~/lib/email.server";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Admin · Doncaster City FC" }];
+  return [{ title: `Admin · ${club.name.short}` }];
 }
 
 export async function loader() {

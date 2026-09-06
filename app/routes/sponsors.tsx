@@ -10,6 +10,7 @@ import {
   variantSrcset,
   variantUrl,
 } from "~/lib/uploads";
+import { club } from "~/club.config";
 
 // ── Tier configuration ───────────────────────────────────────────────────────
 // To add a new tier: add one entry here (and add the tier to the DB enum).
@@ -29,11 +30,11 @@ const CARD_WIDTH = "w-1/2 sm:w-1/4 lg:w-1/6";
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Sponsors & Partnerships · Doncaster City FC" },
+    { title: `Sponsors & Partnerships · ${club.name.short}` },
     {
       name: "description",
       content:
-        "Become a partner of Doncaster City FC. Match-day sponsorship, player sponsorship, and virtual pitch squares.",
+        "Become a partner of . Match-day sponsorship, player sponsorship, and virtual pitch squares.",
     },
   ];
 }

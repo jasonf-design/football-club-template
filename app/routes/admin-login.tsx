@@ -6,9 +6,10 @@ import { users } from "../../db/schema";
 import { verifyPassword } from "~/lib/password.server";
 import { createUserSession, getCurrentUser } from "~/lib/session.server";
 import { Crest } from "~/components/Crest";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Sign in · Doncaster City FC" }];
+  return [{ title: `Sign in · ${club.name.short}` }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -99,10 +100,10 @@ export default function AdminLogin() {
           <Crest className="h-12 w-12" />
           <div className="leading-tight">
             <div className="font-display text-xl tracking-wide">
-              DONCASTER CITY
+              {club.name.displayShort}
             </div>
             <div className="text-[10px] uppercase tracking-[0.28em] text-sky">
-              Football Club · Est 2022
+              Football Club · Est {club.name.established}
             </div>
           </div>
         </Link>
@@ -123,7 +124,7 @@ export default function AdminLogin() {
         <div className="relative text-xs text-paper/40">
           For supporters: the site is just at{" "}
           <Link to="/" className="text-sky">
-            doncastercityfc.com
+            {new URL(club.siteUrl).hostname}
           </Link>
           .
         </div>
@@ -134,7 +135,7 @@ export default function AdminLogin() {
           <div className="lg:hidden flex items-center gap-3 mb-12">
             <Crest className="h-10 w-10" />
             <div className="font-display text-lg text-navy tracking-wide">
-              DCFC ADMIN
+              {club.name.abbreviation} ADMIN
             </div>
           </div>
           <div className="text-[10px] uppercase tracking-[0.28em] text-sky-deep mb-3">

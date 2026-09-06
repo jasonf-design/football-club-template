@@ -7,6 +7,7 @@ import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
 import { variantSrcset, variantUrl } from "~/lib/uploads";
 import { CoachingSection } from "~/components/CoachingSection";
+import { club } from "~/club.config";
 
 const PRESEASON_FIXTURES = [
   { no: 1, month: "Jul", day: 31, year: 2026, dayName: "Fri", opponent: "Matlock Town U21s",       ha: "A", venue: "Venue TBC",                                                                        kickoff: "7:30PM" },
@@ -16,10 +17,10 @@ const PRESEASON_FIXTURES = [
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Under 23s · Doncaster City FC" },
+    { title: `Under 23s · ${club.name.short}` },
     {
       name: "description",
-      content: "Meet the Doncaster City FC Under 23s squad.",
+      content: `Meet the  Under 23s squad.`,
     },
   ];
 }

@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { Crest } from "./Crest";
+import { club } from "~/club.config";
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
@@ -12,35 +13,36 @@ export function SiteFooter() {
               <Crest className="h-12 w-12 bg-paper/5 p-1 rounded-full" />
               <div className="leading-tight">
                 <div className="font-display text-xl text-paper tracking-wide">
-                  DONCASTER CITY FC
+                  {club.name.display}
                 </div>
                 <div className="text-[10px] tracking-[0.28em] uppercase text-sky">
-                  Est 2022
+                  Est {club.name.established}
                 </div>
               </div>
             </div>
             <p className="text-sm leading-relaxed max-w-sm">
-              A new chapter for football in Doncaster. Built by the community,
-              for the community.
+              {club.name.tagline}
             </p>
-            <div className="mt-6">
-              <FooterTitle>Raise free donations</FooterTitle>
-              <a
-                href="https://www.easyfundraising.org.uk/causes/doncaster-city-fc/"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-block hover:opacity-80 transition-opacity"
-              >
-                <img
-                  src="/easyfundraising-white.svg"
-                  alt="easyfundraising"
-                  className="h-5 w-auto"
-                />
-              </a>
-              <p className="mt-2 text-xs text-paper/50 leading-relaxed max-w-[220px]">
-                Shop online and raise free donations for the club — it costs you nothing.
-              </p>
-            </div>
+            {club.fundraising.easyfundraisingUrl && (
+              <div className="mt-6">
+                <FooterTitle>Raise free donations</FooterTitle>
+                <a
+                  href={club.fundraising.easyfundraisingUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-block hover:opacity-80 transition-opacity"
+                >
+                  <img
+                    src="/easyfundraising-white.svg"
+                    alt="easyfundraising"
+                    className="h-5 w-auto"
+                  />
+                </a>
+                <p className="mt-2 text-xs text-paper/50 leading-relaxed max-w-[220px]">
+                  Shop online and raise free donations for the club — it costs you nothing.
+                </p>
+              </div>
+            )}
           </div>
 
           <FooterCol
@@ -66,63 +68,48 @@ export function SiteFooter() {
           <div>
             <FooterTitle>Follow</FooterTitle>
             <ul className="space-y-2 text-sm">
-              <li>
-                <a
-                  href="https://x.com/doncastercityfc"
-                  className="inline-flex items-center gap-2 hover:text-sky transition-colors"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <XIcon /> X / Twitter
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://www.instagram.com/doncastercityfc"
-                  className="inline-flex items-center gap-2 hover:text-sky transition-colors"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <InstagramIcon /> Instagram
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://www.facebook.com/doncastercityfc"
-                  className="inline-flex items-center gap-2 hover:text-sky transition-colors"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <FacebookIcon /> Facebook
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://www.tiktok.com/@doncastercityfc"
-                  className="inline-flex items-center gap-2 hover:text-sky transition-colors"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <TikTokIcon /> TikTok
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://www.youtube.com/@DoncasterCity"
-                  className="inline-flex items-center gap-2 hover:text-sky transition-colors"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <YouTubeIcon /> YouTube
-                </a>
-              </li>
+              {club.social.twitter && (
+                <li>
+                  <a href={club.social.twitter} className="inline-flex items-center gap-2 hover:text-sky transition-colors" target="_blank" rel="noreferrer">
+                    <XIcon /> X / Twitter
+                  </a>
+                </li>
+              )}
+              {club.social.instagram && (
+                <li>
+                  <a href={club.social.instagram} className="inline-flex items-center gap-2 hover:text-sky transition-colors" target="_blank" rel="noreferrer">
+                    <InstagramIcon /> Instagram
+                  </a>
+                </li>
+              )}
+              {club.social.facebook && (
+                <li>
+                  <a href={club.social.facebook} className="inline-flex items-center gap-2 hover:text-sky transition-colors" target="_blank" rel="noreferrer">
+                    <FacebookIcon /> Facebook
+                  </a>
+                </li>
+              )}
+              {club.social.tiktok && (
+                <li>
+                  <a href={club.social.tiktok} className="inline-flex items-center gap-2 hover:text-sky transition-colors" target="_blank" rel="noreferrer">
+                    <TikTokIcon /> TikTok
+                  </a>
+                </li>
+              )}
+              {club.social.youtube && (
+                <li>
+                  <a href={club.social.youtube} className="inline-flex items-center gap-2 hover:text-sky transition-colors" target="_blank" rel="noreferrer">
+                    <YouTubeIcon /> YouTube
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
         </div>
 
         <div className="mt-14 pt-8 border-t border-paper/10 flex flex-col md:flex-row justify-between gap-4 text-xs text-paper/50">
           <div>
-            © {year} Doncaster City Football Club. All rights reserved.
+            © {year} {club.name.full}. All rights reserved.
           </div>
           <div className="flex gap-5">
             <Link to="/privacy" className="hover:text-sky transition-colors">

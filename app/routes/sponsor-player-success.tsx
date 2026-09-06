@@ -2,9 +2,10 @@ import { Link } from "react-router";
 import type { Route } from "./+types/sponsor-player-success";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Thank you · Doncaster City FC" }];
+  return [{ title: `Thank you · ${club.name.short}` }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {

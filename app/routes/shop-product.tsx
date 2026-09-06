@@ -6,11 +6,12 @@ import { media, products } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { AddToCart } from "~/components/AddToCart";
 import { uploadUrlFor } from "~/lib/uploads";
+import { club } from "~/club.config";
 
 export function meta({ data }: Route.MetaArgs) {
-  if (!data?.product) return [{ title: "Product not found · Doncaster City FC" }];
+  if (!data?.product) return [{ title: `Product not found · ${club.name.short}` }];
   return [
-    { title: `${data.product.name} · Doncaster City FC` },
+    { title: `${data.product.name} · ${club.name.short}` },
     {
       name: "description",
       content: data.product.description ?? undefined,

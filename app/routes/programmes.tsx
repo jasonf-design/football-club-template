@@ -6,11 +6,12 @@ import { fixtures, media, programmes } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
 import { variantUrl } from "~/lib/uploads";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Match Programmes · Doncaster City FC" },
-    { name: "description", content: "Digital match-day programmes for every Doncaster City FC home fixture. Read online or download free 48 hours after each match." },
+    { title: `Match Programmes · ${club.name.short}` },
+    { name: "description", content: "Digital match-day programmes for every  home fixture. Read online or download free 48 hours after each match." },
   ];
 }
 

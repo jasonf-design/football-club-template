@@ -5,14 +5,15 @@ import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
 import { getStripe, isStripeConfigured, publicUrl } from "~/lib/stripe.server";
 import { sendDonationInterestNotification } from "~/lib/email.server";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Support the Danum Blues · Doncaster City FC" },
+    { title: `Support the Danum Blues · ${club.name.short}` },
     {
       name: "description",
       content:
-        "Support Doncaster City FC with a one-off contribution. Every pound goes directly towards kit, equipment, and growing the club.",
+        "Support  with a one-off contribution. Every pound goes directly towards kit, equipment, and growing the club.",
     },
   ];
 }
@@ -61,7 +62,7 @@ export async function action({ request }: Route.ActionArgs) {
           currency: "gbp",
           unit_amount: amountPence,
           product_data: {
-            name: "Support Doncaster City FC",
+            name: `Support `,
             description: "Helping fund kit, equipment, and the growth of the Danum Blues.",
           },
         },

@@ -16,14 +16,15 @@ import {
   StripeNotConfiguredError,
 } from "~/lib/stripe.server";
 import { sendPitchInterestNotification } from "~/lib/email.server";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Sponsor a virtual square · Doncaster City FC" },
+    { title: `Sponsor a virtual square · ${club.name.short}` },
     {
       name: "description",
       content:
-        "Sponsor a square of the Doncaster City FC virtual pitch from £50. Your name on the virtual pitch map, in the matchday programme, and on the Supporters Wall for the whole season.",
+        "Sponsor a square of the  virtual pitch from £50. Your name on the virtual pitch map, in the matchday programme, and on the Supporters Wall for the whole season.",
     },
   ];
 }
@@ -193,7 +194,7 @@ export async function action({ request }: Route.ActionArgs) {
             unit_amount: pricePence,
             product_data: {
               name: "Virtual pitch square sponsorship",
-              description: `Doncaster City FC · ${rows.length} virtual square${rows.length === 1 ? "" : "s"} · Display name: "${displayName}"`,
+              description: ` · ${rows.length} virtual square${rows.length === 1 ? "" : "s"} · Display name: "${displayName}"`,
             },
           },
         },

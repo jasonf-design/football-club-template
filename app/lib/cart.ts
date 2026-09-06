@@ -3,8 +3,10 @@
  * the server re-validates everything against the products table.
  */
 
-export const CART_KEY = "dcfc.cart.v1";
-export const CART_EVENT = "dcfc:cart-changed";
+import { club } from "~/club.config";
+
+export const CART_KEY = club.session.cartKey;
+export const CART_EVENT = club.session.cartEvent;
 
 export type CartItem = {
   productId: string;

@@ -6,10 +6,11 @@ import { contactMessages } from "../../db/schema";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
 import { sendContactNotification } from "~/lib/email.server";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Contact · Doncaster City FC" },
+    { title: `Contact · ${club.name.short}` },
     {
       name: "description",
       content: "Get in touch with Doncaster City Football Club.",

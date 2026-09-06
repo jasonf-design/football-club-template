@@ -1,11 +1,12 @@
 import type { Route } from "./+types/terms";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Terms & Conditions · Doncaster City FC" },
-    { name: "description", content: "Terms and conditions for using the Doncaster City FC website and services." },
+    { title: `Terms & Conditions · ${club.name.short}` },
+    { name: "description", content: "Terms and conditions for using the  website and services." },
   ];
 }
 

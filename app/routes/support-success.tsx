@@ -1,9 +1,10 @@
 import { Link, useSearchParams } from "react-router";
 import type { Route } from "./+types/support-success";
 import { Container } from "~/components/Container";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Thank you · Doncaster City FC" }];
+  return [{ title: `Thank you · ${club.name.short}` }];
 }
 
 export default function SupportSuccess() {

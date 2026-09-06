@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { Resend } from "resend";
+import { club } from "~/club.config";
 
 let _resend: Resend | null = null;
 
@@ -35,7 +36,7 @@ export async function sendContactNotification(
   if (!isResendConfigured()) {
     return { sent: false, reason: "unconfigured" };
   }
-  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const to = club.contact.adminEmails;
   const from = process.env.CONTACT_NOTIFY_FROM!;
   const publicUrl = process.env.PUBLIC_URL ?? "";
   const adminUrl = publicUrl
@@ -114,7 +115,7 @@ export async function sendPlayerSponsorPaidNotification(
   if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
     return { sent: false, reason: "unconfigured" };
   }
-  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const to = club.contact.adminEmails;
   const from = process.env.CONTACT_NOTIFY_FROM!;
   const amount = `£${(msg.amountPence / 100).toFixed(2)}`;
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -147,7 +148,7 @@ export async function sendDonationPaidNotification(
   if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
     return { sent: false, reason: "unconfigured" };
   }
-  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const to = club.contact.adminEmails;
   const from = process.env.CONTACT_NOTIFY_FROM!;
   const amount = `£${(msg.amountPence / 100).toFixed(2)}`;
   const subjectLine = `✅ Club donation received — ${amount}`;
@@ -156,7 +157,7 @@ export async function sendDonationPaidNotification(
   <h2 style="margin:0 0 4px;font-size:18px;color:#0a1628">✅ Club donation received</h2>
   <p style="margin:0 0 20px;color:#555;font-size:14px">Payment confirmed via Stripe</p>
   <p style="font-size:32px;font-weight:700;color:#0a1628;margin:0 0 8px">${amount}</p>
-  <p style="color:#555;font-size:14px">Donated to Doncaster City FC</p>
+  <p style="color:#555;font-size:14px">Donated to ${club.name.short}</p>
 </div>`;
   try {
     const { error } = await getResend().emails.send({ from, to, subject: subjectLine, text, html });
@@ -180,7 +181,7 @@ export async function sendDonationInterestNotification(
   if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
     return { sent: false, reason: "unconfigured" };
   }
-  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const to = club.contact.adminEmails;
   const from = process.env.CONTACT_NOTIFY_FROM!;
   const amount = `£${(msg.amountPence / 100).toFixed(2)}`;
 
@@ -244,7 +245,7 @@ export async function sendPlayerSponsorInterestNotification(
   if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
     return { sent: false, reason: "unconfigured" };
   }
-  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const to = club.contact.adminEmails;
   const from = process.env.CONTACT_NOTIFY_FROM!;
 
   const subjectLine = `Player sponsorship interest: ${msg.sponsorName} wants to sponsor ${msg.playerName}`;
@@ -323,14 +324,14 @@ export async function sendLeagueNotification(
     msg.programmeUrl,
     ``,
     `Kind regards,`,
-    `Doncaster City FC`,
+    club.name.short,
   ].join("\n");
 
   const html = `<div style="font-family:system-ui,sans-serif;color:#111;max-width:560px;line-height:1.5">
   <p>Dear Matt,</p>
   <p>Please find our match programme for <strong>${esc(msg.programmeTitle)}</strong> (${esc(msg.matchDate)}, ${esc(msg.competition)}) at the link below:</p>
   <p><a href="${esc(msg.programmeUrl)}" style="color:#0066cc">${esc(msg.programmeUrl)}</a></p>
-  <p>Kind regards,<br>Doncaster City FC</p>
+  <p>Kind regards,<br>${club.name.short}</p>
 </div>`;
 
   try {
@@ -355,7 +356,7 @@ export async function sendProgrammeInterestNotification(
   if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
     return { sent: false, reason: "unconfigured" };
   }
-  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const to = club.contact.adminEmails;
   const from = process.env.CONTACT_NOTIFY_FROM!;
   const esc = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -396,7 +397,7 @@ export async function sendPitchInterestNotification(
   if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
     return { sent: false, reason: "unconfigured" };
   }
-  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const to = club.contact.adminEmails;
   const from = process.env.CONTACT_NOTIFY_FROM!;
 
   const subjectLine = `Pitch square interest from ${msg.name} (${msg.squareCount} square${msg.squareCount === 1 ? "" : "s"})`;
@@ -465,7 +466,7 @@ export async function sendPitchOrderPaidNotification(
   if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
     return { sent: false, reason: "unconfigured" };
   }
-  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const to = club.contact.adminEmails;
   const from = process.env.CONTACT_NOTIFY_FROM!;
   const publicUrl = process.env.PUBLIC_URL ?? "";
   const adminUrl = `${publicUrl.replace(/\/$/, "")}/admin/pitch`;
@@ -522,7 +523,7 @@ export async function sendShopOrderPaidNotification(
   if (!process.env.RESEND_API_KEY || !process.env.CONTACT_NOTIFY_FROM) {
     return { sent: false, reason: "unconfigured" };
   }
-  const to = ["jason.f@DoncasterCity-FC.com", "Mark@DoncasterCity-FC.com"];
+  const to = club.contact.adminEmails;
   const from = process.env.CONTACT_NOTIFY_FROM!;
   const publicUrl = process.env.PUBLIC_URL ?? "";
   const adminUrl = `${publicUrl.replace(/\/$/, "")}/admin/orders`;

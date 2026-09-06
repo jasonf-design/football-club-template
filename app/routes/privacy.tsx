@@ -1,11 +1,12 @@
 import type { Route } from "./+types/privacy";
 import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Privacy Policy · Doncaster City FC" },
-    { name: "description", content: "How Doncaster City FC collects, uses, and protects your personal information." },
+    { title: `Privacy Policy · ${club.name.short}` },
+    { name: "description", content: `How  collects, uses, and protects your personal information.` },
   ];
 }
 

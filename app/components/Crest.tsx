@@ -1,6 +1,8 @@
+import { club } from "~/club.config";
+
 export function Crest({
   className = "h-10 w-10",
-  alt = "Doncaster City FC crest",
+  alt = `${club.name.short} crest`,
 }: {
   className?: string;
   alt?: string;

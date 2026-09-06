@@ -2,6 +2,7 @@ import { createCookieSessionStorage, redirect } from "react-router";
 import { eq } from "drizzle-orm";
 import { db } from "~/db.server";
 import { users, type User } from "../../db/schema";
+import { club } from "~/club.config";
 
 const secret = process.env.SESSION_SECRET;
 if (!secret) {
@@ -12,7 +13,7 @@ if (!secret) {
 
 const storage = createCookieSessionStorage({
   cookie: {
-    name: "__dcfc_session",
+    name: club.session.cookieName,
     httpOnly: true,
     sameSite: "lax",
     path: "/",

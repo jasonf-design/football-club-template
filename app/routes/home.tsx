@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { and, asc, desc, eq, gt, lte } from "drizzle-orm";
 import type { Route } from "./+types/home";
+import { club } from "~/club.config";
 import { db } from "~/db.server";
 import { fixtures, media, posts, sponsors } from "../../db/schema";
 import { Container } from "~/components/Container";
@@ -14,11 +15,10 @@ import {
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Doncaster City FC — Built by the community, for the community" },
+    { title: `${club.name.short} — ${club.name.tagline}` },
     {
       name: "description",
-      content:
-        "Official home of Doncaster City Football Club. Fixtures, news, the latest from the squad, and how to back the club.",
+      content: `Official home of ${club.name.full}. Fixtures, news, the latest from the squad, and how to back the club.`,
     },
   ];
 }
@@ -140,19 +140,17 @@ function Hero({
           <div>
             <div className="flex items-center gap-3 text-[10px] tracking-[0.32em] uppercase text-sky mb-7">
               <span className="h-px w-10 bg-sky" />
-              Doncaster City FC · Est 2022
+              {club.name.short} · Est {club.name.established}
             </div>
             <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] leading-[0.95] tracking-tight text-balance">
               A new chapter
               <br />
               for football in
               <br />
-              <span className="italic text-sky">Doncaster.</span>
+              <span className="italic text-sky">{club.name.city}.</span>
             </h1>
             <p className="mt-8 max-w-lg text-paper/70 text-lg leading-relaxed">
-              Built by supporters, played for the city. Follow the journey
-              through every kick-off, every result, and every story along the
-              way.
+              {club.hero.subtitle}
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Link

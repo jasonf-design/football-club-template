@@ -7,10 +7,11 @@ import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
 import { ResultCard } from "~/components/ResultCard";
 import { readLeagueTable, type LeagueTable } from "~/lib/fwp.server";
+import { club } from "~/club.config";
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Fixtures & Results · Doncaster City FC" },
+    { title: `Fixtures & Results · ${club.name.short}` },
     {
       name: "description",
       content:

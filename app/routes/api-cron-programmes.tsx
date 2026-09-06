@@ -1,4 +1,5 @@
 import { and, asc, gte, inArray, lte } from "drizzle-orm";
+import { club } from "~/club.config";
 import { data } from "react-router";
 import type { Route } from "./+types/api-cron-programmes";
 import { db } from "~/db.server";
@@ -111,7 +112,7 @@ async function sendSummaryEmail(
 ) {
   const resendKey = process.env.RESEND_API_KEY;
   const from = process.env.CONTACT_NOTIFY_FROM;
-  const publicUrl = (process.env.PUBLIC_URL ?? "https://doncastercity-fc.com").replace(/\/$/, "");
+  const publicUrl = (process.env.PUBLIC_URL ?? club.siteUrl).replace(/\/$/, "");
   if (!resendKey || !from) return;
 
   const resend = new Resend(resendKey);

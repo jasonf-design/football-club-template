@@ -6,6 +6,7 @@ import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
 import { Crest } from "~/components/Crest";
 import { CoachingSection } from "~/components/CoachingSection";
+import { club } from "~/club.config";
 
 const PRESEASON_FIXTURES = [
   { no: 1,  month: "Jun", day: 25, year: 2026, dayName: "Thu", opponent: "Dodworth MW 18's",       kickoff: "7:00PM"  },
@@ -24,10 +25,10 @@ const PRESEASON_FIXTURES = [
 
 export function meta(_: Route.MetaArgs) {
   return [
-    { title: "Under 18s · Doncaster City FC" },
+    { title: `Under 18s · ${club.name.short}` },
     {
       name: "description",
-      content: "Doncaster City FC Under 18s — developing the next generation of local talent.",
+      content: ` Under 18s — developing the next generation of local talent.`,
     },
   ];
 }

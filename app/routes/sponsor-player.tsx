@@ -7,11 +7,12 @@ import { Container } from "~/components/Container";
 import { PageHeader } from "~/components/PageHeader";
 import { getStripe, isStripeConfigured, publicUrl } from "~/lib/stripe.server";
 import { sendPlayerSponsorInterestNotification } from "~/lib/email.server";
+import { club } from "~/club.config";
 
 const SPONSORSHIP_PRICE_PENCE = 20000; // £200
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Sponsor a player · Doncaster City FC" }];
+  return [{ title: `Sponsor a player · ${club.name.short}` }];
 }
 
 export async function loader({ params }: Route.LoaderArgs) {
@@ -39,7 +40,7 @@ export async function loader({ params }: Route.LoaderArgs) {
           unit_amount: SPONSORSHIP_PRICE_PENCE,
           product_data: {
             name: `Sponsor ${player.name}`,
-            description: "Doncaster City FC · Player sponsorship for the season",
+            description: ` · Player sponsorship for the season`,
           },
         },
       },

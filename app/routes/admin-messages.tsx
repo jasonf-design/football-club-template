@@ -1,5 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { Form } from "react-router";
+import { club } from "~/club.config";
 import type { Route } from "./+types/admin-messages";
 import { db } from "~/db.server";
 import { contactMessages } from "../../db/schema";
@@ -122,7 +123,7 @@ export default function AdminMessages({ loaderData }: Route.ComponentProps) {
                   </button>
                 </Form>
                 <a
-                  href={`mailto:${m.email}?subject=Re: ${encodeURIComponent(m.subject ?? "Your message to Doncaster City FC")}`}
+                  href={`mailto:${m.email}?subject=Re: ${encodeURIComponent(m.subject ?? `Your message to ${club.name.short}`)}`}
                   className="text-xs uppercase tracking-[0.18em] text-mute hover:text-navy"
                 >
                   Reply by email
